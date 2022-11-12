@@ -1,11 +1,12 @@
 // include libraries
 #include <DHT.h>    //temp & humid
-
+#include <IRremote.h>
 
 // define pins 
 #define temt6000pin A0
 #define dhtpin      2   
 #define DHTTYPE DHT11
+#define transpin    3
 
 //define identifiers
 DHT dht(dhtpin, DHTTYPE);
@@ -15,6 +16,7 @@ void setup() {
     Serial.begin(9600);
 
     dht.begin();
+    IRsender.begin(transpin);
     
     // pinMode define
     pinMode(temt6000pin, INPUT);
@@ -27,6 +29,12 @@ void loop() {
   dhtsense();
   
   Serial.println("\n**********************************\n");
+
+  if (hic >= 28) {
+    IrSender.sendNEC(0x, 32); //turn AC on
+    delay(1000);
+    IrSender.sendNEC(0x, 32); //
+  }
 }
 
 void ambient() {
