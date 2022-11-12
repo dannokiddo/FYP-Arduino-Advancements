@@ -1,3 +1,7 @@
+// define Blynk connection
+#define BLYNK_TEMPLATE_ID "TMPLsgwf8Dhk"
+#define BLYNK_DEVICE_NAME "NIOT DRAFT"
+#define BLYNK_AUTH_TOKEN "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
 
 // include libraries
 #include <DHT.h>      //temp & humid
@@ -23,6 +27,7 @@ char pass[] = "cheesecake6";      // Wifi password
 
 const int GMT = +8;               // Time zone constant
 
+//==================================================================================
 void setup() {
   // Begin Serial Monitor
   Serial.begin(9600);
@@ -61,7 +66,8 @@ void setup() {
       }
 }
 
-void loop() {
+//==================================================================================
+void loop() { 
   
   printTime();
 
@@ -79,6 +85,7 @@ void loop() {
   }*/
 }
 
+//#################################################################################
 void WiFiConnect() {
   // Check if the WiFi module works
   if (WiFi.status() == WL_NO_SHIELD) {
@@ -127,8 +134,7 @@ void print2digits(int number) {
   Serial.print(number);
 }
 
-void printTime()
-{
+void printTime() {
   Serial.print("Time : ");
   print2digits(rtc.getHours() + GMT);
   Serial.print(":");
