@@ -4,12 +4,13 @@
 #define BLYNK_AUTH_TOKEN "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
 
 // include libraries
-#include <DHT.h>      //temp & humid
+#include <DHT.h>                  //temp & humid
 #include <IRremote.h>
-#include <SPI.h>      //wifi **Week6
+#include <SPI.h>                  //wifi **Week6
 #include <WiFiNINA.h> 
-#include <WiFiUdp.h>  //ntp signal
-#include <RTCZero.h>  //real time clock **
+#include <WiFiUdp.h>              //ntp signal
+#include <RTCZero.h>              //real time clock 
+#include <BlynkSimpleWiFiNINA.h>  //Blynk **
 
 // define pins 
 #define temt6000pin A0
@@ -64,12 +65,18 @@ void setup() {
       rtc.setEpoch(epoch);
       Serial.println();
       }
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 }
 
 //==================================================================================
 void loop() { 
   
+  Blynk.run();
+
   printTime();
+  //String time = rtc.getHours() + ":" + rtc.getMinutes() + ":" + rtc.getSeconds();
+  //Blynk.virtualWrite(V3, time);
 
   ambient();
 
@@ -152,6 +159,8 @@ void ambient() {
   float lux = light_val * 0.9765625;  // 1000/1024
   Serial.println("Luminance Lux: " + (String)lux + "\n");
   delay(500);
+
+  Blynk.virtualWrite(V0, lux);
 }
 
 void dhtsense() {
@@ -171,4 +180,7 @@ void dhtsense() {
   Serial.println("Temperature : " + (String)t + " °C");
   Serial.println("Heat Index  : " + (String)hic + " °C \n");
   delay(500);
+
+  Blynk.virtualWrite(V1, h);  //Blynk Input
+  Blynk.virtualWrite(V2, t);
 }

@@ -23,10 +23,12 @@ DHT dht(dhtpin, DHTTYPE);
 RTCZero rtc;
 
 int status = WL_IDLE_STATUS;      // Wifi status
-char ssid[] = "Nazrin's Family";  // Wifi SSID
-char pass[] = "cheesecake6";      // Wifi password
+char ssid[] = "UniKL MIIT";  // Wifi SSID
+char pass[] = "";      // Wifi password
 
 const int GMT = +8;               // Time zone constant
+
+int btnV5;
 
 //==================================================================================
 void setup() {
@@ -74,25 +76,32 @@ void loop() {
   
   Blynk.run();
 
-  printTime();
-  //String time = rtc.getHours() + ":" + rtc.getMinutes() + ":" + rtc.getSeconds();
-  //Blynk.virtualWrite(V3, time);
+  //Serial Output
+  SerialOutput();
 
-  ambient();
-
-  dhtsense();
   
-  Serial.println("\n**********************************\n");
-  delay(2000);
-
-  /*if (hic >= 28) {
-    IrSender.sendNEC(0x, 32); //turn AC on
-    delay(1000);
-    IrSender.sendNEC(0x, 32); //turn fan on
-  }*/
+  if (rtc.getMinutes() >= 30 && rtc.getSeconds() <= 59)
+  {
+    SerialOutput();
+    Serial.println("function loop");
+    //IrSender.sendNEC(0x, 32); //do AC on
+    //delay AC in While Loop
+    while (rtc.getSeconds() <= 59 || btnV5 != 1) {
+      SerialOutput();
+    }
+  }
 }
 
 //#################################################################################
+//Serial Monitor Output
+void SerialOutput() { 
+  printTime();
+  ambient();
+  dhtsense();
+  Serial.println("\n**********************************\n");
+  delay(2000);
+}
+
 void WiFiConnect() {
   // Check if the WiFi module works
   if (WiFi.status() == WL_NO_SHIELD) {
@@ -142,7 +151,7 @@ void print2digits(int number) {
 }
 
 void printTime() {
-  Serial.print("Time : ");
+  Serial.print("Time  : ");
   print2digits(rtc.getHours() + GMT);
   Serial.print(":");
   
@@ -151,13 +160,16 @@ void printTime() {
   
   print2digits(rtc.getSeconds());
   Serial.println("\n");
+
+  String time = String(rtc.getHours() + GMT) + ":" + String(rtc.getMinutes());
+  Blynk.virtualWrite(V3, time);
 }
 
 void ambient() {
   // ambient light
   int light_val = analogRead(temt6000pin);
   float lux = light_val * 0.9765625;  // 1000/1024
-  Serial.println("Luminance Lux: " + (String)lux + "\n");
+  Serial.println("Luminance   : " + (String)lux + " lux\n");
   delay(500);
 
   Blynk.virtualWrite(V0, lux);
@@ -177,10 +189,16 @@ void dhtsense() {
   float hic = dht.computeHeatIndex(t, h, false); //false->notFarhrenheit = Celcius
 
   Serial.println("Humidity    : " + (String)h + " %");
+  //Serial.print("    ");
   Serial.println("Temperature : " + (String)t + " °C");
-  Serial.println("Heat Index  : " + (String)hic + " °C \n");
+  //Serial.println("Heat Index  : " + (String)hic + " °C \n");
   delay(500);
 
   Blynk.virtualWrite(V1, h);  //Blynk Input
   Blynk.virtualWrite(V2, t);
+}
+
+BLYNK_WRITE(V5)
+{
+  int btnV5 = param.asInt();
 }

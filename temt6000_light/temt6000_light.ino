@@ -21,19 +21,26 @@ void loop() {
   Serial.println(reading); 
   */
 
-  /*float ambient_read = analogRead(temt6000pin);
+  /*float ambient_read = analogRead(A0);
   float light_percent = ambient_read/1023;      //percentage
-  light_percent = pow(light_percent, 2.0);       //equate
+  light_percent = pow(light_percent, 2.0);      //equate
 
   Serial.println(light_percent);
   */
 
   
-  int light_val = analogRead(temt6000pin);
+  /*int light_val = analogRead(temt6000pin);
   float light = light_val * 0.0976;// percentage calculation
 
   float lux = light_val * 0.9765625;  // 1000/1024
   Serial.println(lux);
   delay(500);
+  *///working
   
+  float volts = analogRead(A0) * 5 / 1024;  
+  float amps  = volts / 10000;              //across 10,000 ohms
+  float microamps = amps * 100000;          //1,000,000
+  float lux   = microamps * 2;
+  Serial.println(lux);
+  delay(1000);
 }
