@@ -15,18 +15,18 @@
 // define pins 
 #define temt6000pin A0
 #define dhtpin      2   
-#define DHTTYPE DHT11
 #define transpin    3
+#define DHTTYPE DHT11
 
 //define identifiers
 DHT dht(dhtpin, DHTTYPE);
 RTCZero rtc;
 
-int status = WL_IDLE_STATUS;      // Wifi status
-char ssid[] = "UniKL MIIT";  // Wifi SSID
-char pass[] = "";      // Wifi password
+int status = WL_IDLE_STATUS;     // Wifi status
+char ssid[] = "UniKL MIIT";      // Wifi SSID
+char pass[] = "";                // Wifi password
 
-const int GMT = +8;               // Time zone constant
+const int GMT = +8;              // Time zone constant
 
 int btnV5;
 
@@ -200,5 +200,5 @@ void dhtsense() {
 
 BLYNK_WRITE(V5)
 {
-  int btnV5 = param.asInt();
+  btnV5 = param.asInt();
 }

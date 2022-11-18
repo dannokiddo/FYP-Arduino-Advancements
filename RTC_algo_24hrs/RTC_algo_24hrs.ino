@@ -9,25 +9,22 @@
 #include <BlynkSimpleWiFiNINA.h>
 
 // WiFi Credentials (edit as required)
-char ssid[] = "Nazrin's Family";      // Wifi SSID
+char ssid[] = "Nazrin's Family";   // Wifi SSID
 char pass[] = "cheesecake6";       // Wifi password
+int status = WL_IDLE_STATUS;       // WiFi stats
 
 // Object for Real Time Clock
 RTCZero rtc;
+int now;
+const int GMT = +8;       // Time zone constant
+bool reset24hr = false;   // Run once per 24hr
 
-int status = WL_IDLE_STATUS;
-
-const int GMT = +8; // Time zone constant
-
+// Blynk
 int btnV5;
-int btn;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-
-  //pinMode
-  pinMode(12, OUTPUT);
 
   // Print connection status
   WiFiConnect();
@@ -47,60 +44,39 @@ void setup() {
     epoch = WiFi.getTime();
     numberOfTries++;
   }
-
   while ((epoch == 0) && (numberOfTries < maxTries));
 
-    if (numberOfTries == maxTries) {
-    Serial.print("NTP unreachable!!");
-    while (1);
-    }
+  if (numberOfTries == maxTries) {
+  Serial.print("NTP unreachable!!");
+  while (1);
+  }
 
-    else {
-    Serial.print("Epoch received: ");
-    Serial.println(epoch);
-    rtc.setEpoch(epoch);
-    Serial.println();
-    }
+  else {
+  Serial.print("Epoch received: ");
+  Serial.println(epoch);
+  rtc.setEpoch(epoch);
+  Serial.println();
+  }
 
-    Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 }
 //**********************************************************************************
 void loop() {
   Blynk.run();
   // put your main code here, to run repeatedly:
-  BLYNK_WRITE(btnV5);
   printTime();
   delay(1000);
 
   //now = rtc.getHours() + GMT; //get hour now
-  int now = rtc.getSeconds();
+  now = rtc.getSeconds();
 
-  /*do {
-    now = rtc.getSeconds();
-    BLYNK_WRITE(V5);
-
-    Serial.println("while loop");
-    delay(2000);
-
-    Serial.println("btnV5:" + String(btnV5));
-    Serial.println("btn:" + String(btn));
-
-    if (btnV5 == 1 || btn == 1) break;
-  } while (now >= 30 && now <=59);*/
-
-  while (now >= 30 && btnV5 != 1) {
-    now = rtc.getSeconds();
-    BLYNK_WRITE(btnV5);
-
-    Serial.println("while loop");
-    delay(2000);
-
-    Serial.println("btnV5 :" + String(btnV5));
-    Serial.println("btn   :" + String(btn));
-
-    int btn = digitalRead(12);
-    if (btnV5 == 1) break;
-    else if (btn == 1) break;
+  while (now >= 30 && now <= 59 && reset24hr == false) {
+    reset24hr = true;
+    Serial.println("run once");
+    
+    Serial.println("loop");
+    delay(1000);
+    Blynk.virtualWrite(V6, HIGH);
   }
 }
 
@@ -166,8 +142,20 @@ void printTime()
   Serial.println();
 }
 
+void dailyreset()
+{
+  if (now == 0) { 
+    reset24hr = false;
+    Serial.println("reset taken effect.");
+  }
+}
+
 BLYNK_WRITE(V5)
 {
   btnV5 = param.asInt();
   Serial.println("blynk:" + String(btnV5));
+
+  if (btnV5 == 1) {
+    Blynk.virtualWrite(V6, LOW);
+  }
 }
