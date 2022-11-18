@@ -69,15 +69,20 @@ void loop() {
 
   //now = rtc.getHours() + GMT; //get hour now
   now = rtc.getSeconds();
+  if (nowhr == 4 && reset24hr == false) {
+    IrSender AC ON
+    IrSender tmr  1hr
+    reset24hr = true;
+  }
 
   while (now >= 30 && now <= 59 && reset24hr == false) {
-    reset24hr = true;
     Serial.println("run once");
     
     Serial.println("loop");
     delay(1000);
     Blynk.virtualWrite(V6, HIGH);
   }
+  reset24hr = true;
 }
 
 //##################################################################################
