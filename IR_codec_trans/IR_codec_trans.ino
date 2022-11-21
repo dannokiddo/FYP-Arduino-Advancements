@@ -22,9 +22,10 @@ void setup()
 void loop()  
 {  
   //  IrSender.sendNEC(0xFC03EF00, 0x34, true, 0); // the address 0x0102 with the command 0x34 is sent 
-  /*IrSender.sendNEC(0xF7C03F, 32); // the address 0x0102 with the command 0x34 is sent 
+  IrSender.sendNEC(0xF7C03F, 32); // the address 0x0102 with the command 0x34 is sent 
+  Serial.println("ON");
   delay(1000); // wait for one second
-  IrSender.sendNEC(0xF7E01F, 32);
+  /*IrSender.sendNEC(0xF7E01F, 32);
   delay(1000);
   IrSender.sendNEC(0xF7807F, 32);
   delay(1000);
@@ -34,6 +35,7 @@ void loop()
   delay(1000);
   IrSender.sendNEC(0xF700FF, 32);
   delay(1000);*/
-  IrSender.sendNEC(0xFD02EF00, 32);
+  IrSender.sendNEC(0xF740BF, 32);
+  Serial.println("OFF");
   delay(1000);
 }  
