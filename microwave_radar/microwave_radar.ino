@@ -1,4 +1,4 @@
-#define human A0
+#define human 12
 #define led 7
 
 void setup() {
@@ -11,17 +11,19 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  int motion = analogRead(human);
-  delay(100);
+  int motion = digitalRead(human);
+  delay(500);
 
   Serial.println(motion);
 
   if (motion == HIGH)
   {
     digitalWrite(led, HIGH);
+    Serial.println("Presence");
   }
   else
   {
     digitalWrite(led, LOW);
+    Serial.println("Vacant");
   }
 }
