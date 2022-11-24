@@ -23,8 +23,10 @@
 // define identifiers
 DHT dht(dhtpin, DHTTYPE);        // DHT
 RTCZero rtc;                     // Time
-int motion;                      // Microwave Radar
-int presence;
+int   motion;       // read      // Microwave Radar
+int   presence;     // object
+int   periodAbsent; // absent1(t)
+bool  periodrst;    // rst status
 
 int status = WL_IDLE_STATUS;     // Wifi status
 char ssid[] = "Nazrin's Family";      // Wifi SSID
@@ -220,14 +222,25 @@ void human()
   delay(1000);
 
   if (motion == HIGH) {
-    String detect = "Presence    : Yes";
+    String detect = "Presence    : Detected";
     Serial.println("\n" + detect);
+
+    presence = 1;
     Blynk.virtualWrite(V4, detect);
   }
   else {
     String nodetect = "Presence    : Absent";
     Serial.println("\n" + nodetect);
+
+    presence = 0;
     Blynk.virtualWrite(V4, nodetect);
+  }
+}
+
+void AutoShutOff()
+{
+  if (presence == 0) {
+    periodAbsent = millis();    // start timer when absent
   }
 }
 
