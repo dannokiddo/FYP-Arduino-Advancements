@@ -12,7 +12,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 #include <IRremote.h> // >v3.0.0
                                             
-#define PIN_SEND 5  //3
+#define PIN_SEND 3  //3
 
 void setup()  
 {  
@@ -22,11 +22,9 @@ void setup()
 void loop()  
 {  
   //  IrSender.sendNEC(0xFC03EF00, 0x34, true, 0); // the address 0x0102 with the command 0x34 is sent 
-  IrSender.sendNEC(0xF7C03F, 32); // the address 0x0102 with the command 0x34 is sent 
+  /*IrSender.sendNEC(0xF7C03F, 32); // the address 0x0102 with the command 0x34 is sent 
   Serial.println("ON");
   delay(2000); // wait for one second
-  IrSender.sendNEC(0xF7E01F, 32); // white
-  delay(2000);
   /*IrSender.sendNEC(0xF7807F, 32); // dim down
   IrSender.sendNEC(0xF7807F, 32);
   IrSender.sendNEC(0xF7807F, 32);
@@ -37,7 +35,7 @@ void loop()
   IrSender.sendNEC(0xF7807F, 32);
   Serial.println("dim down");
   delay(2000);
-    IrSender.sendNEC(0xF7807F, 32); // dim down
+  IrSender.sendNEC(0xF7807F, 32); // dim down
   IrSender.sendNEC(0xF7807F, 32);
   IrSender.sendNEC(0xF7807F, 32);
   Serial.println("dim down");
@@ -46,10 +44,10 @@ void loop()
   Serial.println("dim up");
   delay(2000);
   IrSender.sendNEC(0xF700FF, 32);
-  delay(2000);*/
+  delay(2000);
   IrSender.sendNEC(0xF740BF, 32); //off bulb functional consistent with 3 repetition
   IrSender.sendNEC(0xF740BF, 32); 
   IrSender.sendNEC(0xF740BF, 32);
   Serial.println("OFF");
-  delay(2000);
+  delay(2000);*/
 }  

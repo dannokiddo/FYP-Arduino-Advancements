@@ -1,6 +1,6 @@
 #include <DHT.h>    //temp & humid
 
-#define dhtpin      2   
+#define dhtpin      4   
 #define DHTTYPE DHT11
 
 DHT dht(dhtpin, DHTTYPE);

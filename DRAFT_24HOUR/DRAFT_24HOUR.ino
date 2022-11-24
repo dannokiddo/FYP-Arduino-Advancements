@@ -1,7 +1,7 @@
 // define Blynk connection
 #define BLYNK_TEMPLATE_ID "TMPLsgwf8Dhk"
 #define BLYNK_DEVICE_NAME "NIOT DRAFT"
-#define BLYNK_AUTH_TOKEN "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
+#define BLYNK_AUTH_TOKEN  "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
 
 // include libraries
 #include <DHT.h>                  //temp & humid
@@ -14,19 +14,24 @@
 
 // define pins 
 #define temt6000pin A0
-#define dhtpin      2   
+#define recvpin     2
 #define transpin    3
+#define dhtpin      4   
+#define radar      21
 #define DHTTYPE DHT11
 
-//define identifiers
-DHT dht(dhtpin, DHTTYPE);
-RTCZero rtc;
+// define identifiers
+DHT dht(dhtpin, DHTTYPE);        // DHT
+RTCZero rtc;                     // Time
+int motion;                      // Microwave Radar
+int presence;
 
 int status = WL_IDLE_STATUS;     // Wifi status
-char ssid[] = "UniKL MIIT";      // Wifi SSID
-char pass[] = "";                // Wifi password
+char ssid[] = "Nazrin's Family";      // Wifi SSID
+char pass[] = "cheesecake6";                // Wifi password
 
 int nowhr;
+int nowmin;
 const int GMT = +8;              // Time zone constant
 
 //Blynk
@@ -50,8 +55,10 @@ void setup() {
   
   // pinMode define
   pinMode(temt6000pin, INPUT);
+  pinMode(recvpin, INPUT);
+  pinMode(radar, INPUT);
 
-  //NTP Fetch Service
+  // NTP Fetch Service~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   unsigned long epoch;                  // Variable to represent epoch
   int numberOfTries = 0, maxTries = 6;  // Variable for number of tries to NTP service
 
@@ -59,20 +66,19 @@ void setup() {
       epoch = WiFi.getTime();
       numberOfTries++;
     }
-
     while ((epoch == 0) && (numberOfTries < maxTries));
 
-      if (numberOfTries == maxTries) {
-      Serial.print("NTP unreachable!!");
-      while (1);
-      }
+    if (numberOfTries == maxTries) {
+    Serial.print("NTP unreachable!!");
+    while (1);
+    }
 
-      else {
-      Serial.print("Epoch received: ");
-      Serial.println(epoch);
-      rtc.setEpoch(epoch);
-      Serial.println();
-      }
+    else {
+    Serial.print("Epoch received: ");
+    Serial.println(epoch);
+    rtc.setEpoch(epoch);
+    Serial.println();
+    }//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 }
@@ -85,24 +91,29 @@ void loop() {
   //Serial Output
   SerialOutput();
 
-  nowhr = rtc.getHours();   //get instant hour time
+  //nowhr = rtc.getHours();   //get instant hour time
+  nowmin = rtc.getMinutes();
 
-  if (nowhr == 4 && rstAC == false)
+  if ((nowmin%2) == 1 && rstAC == false) // (nowhr == 4 && rstAC == false)
   {
-    IrSender.sendNEC(0x, 32);   //do AC on
-    IrSender.sendNEC(0x, 32);   //set AC tmr
+    // demo with bulb
+    IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   // do AC on
+    IrSender.sendNEC(0xEF00, 0x7, 1);//white     // set AC tmr
 
     stateAC = true;             //AC state on
     rstAC = true;               //rst state: done run once
   }
+
+  Reset24Hr();    // reset bool rstAC to false after 24hr
 }
 
-//#################################################################################
-//Serial Monitor Output
+//##################################################################################
+// Serial Monitor Output
 void SerialOutput() { 
   printTime();
   ambient();
   dhtsense();
+  human();
   Serial.println("\n**********************************\n");
   delay(2000);
 }
@@ -203,17 +214,44 @@ void dhtsense() {
   Blynk.virtualWrite(V2, t);
 }
 
+void human()
+{
+  motion = digitalRead(radar);
+  delay(1000);
+
+  if (motion == HIGH) {
+    String detect = "Presence    : Yes";
+    Serial.println("\n" + detect);
+    Blynk.virtualWrite(V4, detect);
+  }
+  else {
+    String nodetect = "Presence    : Absent";
+    Serial.println("\n" + nodetect);
+    Blynk.virtualWrite(V4, nodetect);
+  }
+}
+
+void Reset24Hr()
+{
+  //nowhr == rtc.getHours();
+  nowmin == rtc.getMinutes();
+
+  if ((nowmin%2) == 0) { // (nowhr == 0) reset bool rstAC to false after 24hr
+    rstAC = false;
+  }
+}
+
 BLYNK_WRITE(V5)
 {
   btnV5 = param.asInt();
 
   if (btnV5 == 0 && stateAC == true) {
-    IrSender.sendNEC();   //do AC off
-    stateAC = false;      //AC state off
+    IrSender.sendNEC(0xEF00, 0x2, 1);//off bulb   //do AC off
+    stateAC = false;                 //AC state off
   }
 
   else if (btnV5 == 1) {
-    IrSender.sendNEC();   //do AC on
-    stateAC = true;       //AC state on
+    IrSender.sendNEC(0xEF00, 0x3, 3); //do AC on
+    stateAC = true;                   //AC state on
   }
 }

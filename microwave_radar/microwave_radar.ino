@@ -1,4 +1,4 @@
-#define human 12
+#define human 21
 #define led 7
 
 void setup() {
