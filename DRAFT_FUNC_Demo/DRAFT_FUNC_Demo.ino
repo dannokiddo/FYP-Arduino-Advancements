@@ -27,8 +27,8 @@ int motion;                      // Microwave Radar
 int presence;
 
 int status = WL_IDLE_STATUS;     // Wifi status
-char ssid[] = "Nazrin's Family"; // Wifi SSID
-char pass[] = "cheesecake6";     // Wifi password
+char ssid[] = "ace93"; // Wifi SSID
+char pass[] = "anything";     // Wifi password
 
 int nowhr;
 int nowmin;
