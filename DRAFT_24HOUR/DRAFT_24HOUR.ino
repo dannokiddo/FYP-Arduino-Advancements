@@ -21,22 +21,24 @@
 #define DHTTYPE DHT11
 
 // define identifiers
-DHT dht(dhtpin, DHTTYPE);        // DHT
-RTCZero rtc;                     // Time
+int   status = WL_IDLE_STATUS;     // Wifi status
+char  ssid[] = "Nazrin's Family";  // Wifi SSID
+char  pass[] = "cheesecake6";      // Wifi password
+
+DHT   dht(dhtpin, DHTTYPE);      // DHT
 int   motion;       // read      // Microwave Radar
-int   presence;     // object
-int   periodAbsent; // absent1(t)
+int   presence;     // object (human)
+
+RTCZero rtc;                     // Time
+const int GMT = +8;              // Time zone constant
+int   nowhr;        // hr instance
+int   nowmin;       // min instance
+int   runTime;      // appliance run time
+int   periodAbsent; // absent(t)
+bool  rstAbsent;    // absent run once
 bool  periodrst;    // rst status
 
-int status = WL_IDLE_STATUS;     // Wifi status
-char ssid[] = "Nazrin's Family";      // Wifi SSID
-char pass[] = "cheesecake6";                // Wifi password
-
-int nowhr;
-int nowmin;
-const int GMT = +8;              // Time zone constant
-
-//Blynk
+// Blynk
 int btnV5;
 bool rstAC = false;
 bool rstFan = false;
@@ -93,34 +95,25 @@ void loop() {
   //Serial Output
   SerialOutput();
 
-  //nowhr = rtc.getHours();   //get instant hour time
-  nowmin = rtc.getMinutes();
+  //Runs Scheduled Action
+  ScheduledAction_Light();
 
-  if ((nowmin%2) == 1 && rstAC == false) // (nowhr == 4 && rstAC == false)
-  {
-    // demo with bulb
-    IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   // do AC on
-    IrSender.sendNEC(0xEF00, 0x7, 1);//white     // set AC tmr
-
-    stateAC = true;             //AC state on
-    rstAC = true;               //rst state: done run once
-  }
-
+  AutoShutOff();  // Shut OFF when Absent
   Reset24Hr();    // reset bool rstAC to false after 24hr
 }
 
 //##################################################################################
-// Serial Monitor Output
-void SerialOutput() { 
+
+void SerialOutput() { // Serial Monitor Output
   printTime();
   ambient();
   dhtsense();
-  human();
+  HumanPresence();
   Serial.println("\n**********************************\n");
   delay(2000);
 }
 
-void WiFiConnect() {
+void WiFiConnect() {  // Connect WiFi
   // Check if the WiFi module works
   if (WiFi.status() == WL_NO_SHIELD) {
     // Wait until WiFi ready
@@ -129,7 +122,7 @@ void WiFiConnect() {
 
   }
 
-      // Establish a WiFi connection
+  // Establish a WiFi connection
   while ( status != WL_CONNECTED) {
 
     Serial.print("Attempting to connect to SSID: ");
@@ -142,7 +135,7 @@ void WiFiConnect() {
   }
 }
 
-void printWiFiStatus() {
+void printWiFiStatus() {  // WiFi Status
 
   // Print the network SSID
   Serial.print("SSID: ");
@@ -160,7 +153,7 @@ void printWiFiStatus() {
   Serial.println(" dBm");
 }
 
-void print2digits(int number) {
+void print2digits(int number) { // Time Formatter
 
   if (number < 10) {
     Serial.print("0");
@@ -168,7 +161,7 @@ void print2digits(int number) {
   Serial.print(number);
 }
 
-void printTime() {
+void printTime() {  // Time
   Serial.print("Time  : ");
   print2digits(rtc.getHours() + GMT);
   Serial.print(":");
@@ -183,7 +176,7 @@ void printTime() {
   Blynk.virtualWrite(V3, time);
 }
 
-void ambient() {
+void ambient() {  // Ambient Lighting
   // ambient light
   int light_val = analogRead(temt6000pin);
   float lux = light_val * 0.9765625;  // 1000/1024
@@ -193,7 +186,7 @@ void ambient() {
   Blynk.virtualWrite(V0, lux);
 }
 
-void dhtsense() {
+void dhtsense() { // Temperature & Humidity
   // temp & humid //readcan take 250ms -  2s
   float h = dht.readHumidity();
   float t = dht.readTemperature();
@@ -216,8 +209,8 @@ void dhtsense() {
   Blynk.virtualWrite(V2, t);
 }
 
-void human()
-{
+void HumanPresence()  // Human Detection
+{  
   motion = digitalRead(radar);
   delay(1000);
 
@@ -226,6 +219,7 @@ void human()
     Serial.println("\n" + detect);
 
     presence = 1;
+    rstAbsent = false;    // reset Absent status
     Blynk.virtualWrite(V4, detect);
   }
   else {
@@ -234,13 +228,18 @@ void human()
 
     presence = 0;
     Blynk.virtualWrite(V4, nodetect);
+    
+    if (presence == 0 && rstAbsent == false) {  
+      periodAbsent = millis();    // start timer when absent
+    }
   }
 }
 
-void AutoShutOff()
-{
-  if (presence == 0) {
-    periodAbsent = millis();    // start timer when absent
+void AutoShutOff()  // Shut Off 
+{  
+  if (periodAbsent - 120000 >= 0) {     // after 2 mins Shut OFF
+    // OFF appliances
+    IrSender.sendNEC(0xEF00, 0x2, 3);   // OFF bulb
   }
 }
 
@@ -249,8 +248,26 @@ void Reset24Hr()
   //nowhr == rtc.getHours();
   nowmin == rtc.getMinutes();
 
-  if ((nowmin%2) == 0) { // (nowhr == 0) reset bool rstAC to false after 24hr
+  // (nowhr == 0) reset bool rstAC to false after 24hr
+  if ((nowmin%10) == 0) {  // every 10 mins rst
     rstAC = false;
+  }
+}
+
+void ScheduledAction_Light()
+{
+  //nowhr = rtc.getHours();   //get instant hour time
+  nowmin = rtc.getMinutes();
+
+  // (nowhr == 4 && rstAC == false)
+  if ((nowmin%5) == 0 && rstAC == false)  // every 5 mins
+  {
+    // demo with bulb
+    IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   // do AC on
+    IrSender.sendNEC(0xEF00, 0x7, 1);//white     // set AC tmr
+
+    stateAC = true;             //AC state on
+    rstAC = true;               //rst state: done run once
   }
 }
 
@@ -259,7 +276,7 @@ BLYNK_WRITE(V5)
   btnV5 = param.asInt();
 
   if (btnV5 == 0 && stateAC == true) {
-    IrSender.sendNEC(0xEF00, 0x2, 1);//off bulb   //do AC off
+    IrSender.sendNEC(0xEF00, 0x2, 3);//off bulb   //do AC off
     stateAC = false;                 //AC state off
   }
 
