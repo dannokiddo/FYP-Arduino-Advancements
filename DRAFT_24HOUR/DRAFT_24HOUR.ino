@@ -39,11 +39,21 @@ bool  rstAbsent;    // absent run once
 bool  periodrst;    // rst status
 
 // Blynk
-int btnV5;
+int btnV10;   // AC
+int btnV11;     // AC Timer
+int btnV12;     // AC Up Temp
+int btnV13;     // AC Down Temp
+int btnV20;   // Light
+int btnV21;     // Light Brightness
+int btnV30;   // Fan
+int btnV31;     // Fan Speed
+int btnV32;     // Fan Timer
 bool rstAC = false;
 bool rstFan = false;
+bool rstBulb = false;
 bool stateAC = false;
 bool stateFan = false;
+bool StateBulb = false;
 
 //==================================================================================
 void setup() {
@@ -263,25 +273,128 @@ void ScheduledAction_Light()
   if ((nowmin%5) == 0 && rstAC == false)  // every 5 mins
   {
     // demo with bulb
-    IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   // do AC on
-    IrSender.sendNEC(0xEF00, 0x7, 1);//white     // set AC tmr
+    IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   
+    IrSender.sendNEC(0xEF00, 0x7, 1);//white     
+
+    // do AC on
+    // set AC tmr
 
     stateAC = true;             //AC state on
     rstAC = true;               //rst state: done run once
   }
 }
 
-BLYNK_WRITE(V5)
-{
-  btnV5 = param.asInt();
+//void ScheduledAction_AC
+//void ScheduledAction_Fan
 
-  if (btnV5 == 0 && stateAC == true) {
-    IrSender.sendNEC(0xEF00, 0x2, 3);//off bulb   //do AC off
+BLYNK_WRITE(V10)    // AC
+{
+  btnV10 = param.asInt();
+
+  if (btnV10 == 0 && stateAC == true) {
+    IrSender.sendNEC(0xEF00, 0x2, 3);//do AC off
     stateAC = false;                 //AC state off
   }
 
-  else if (btnV5 == 1) {
+  else if (btnV10 == 1) {
     IrSender.sendNEC(0xEF00, 0x3, 3); //do AC on
     stateAC = true;                   //AC state on
+
+    // If Absent 
+    AutoShutOff();
+  }
+}
+
+BLYNK_WRITE(V20)    // Light
+{
+  btnV20 = param.asInt();
+
+  if (btnV20 == 0 && stateAC == true) {
+    IrSender.sendNEC(0xEF00, 0x2, 3); //off bulb
+    stateBulb = false;                //AC state off
+  }
+
+  else if (btnV20 == 1) {
+    IrSender.sendNEC(0xEF00, 0x3, 3); //do bulb on
+    IrSender.sendNEC(0xEF00, 0x7, 3); //do bulb white
+    stateBulb = true;                 //AC state on
+
+    // If Absent = Shut Off
+    AutoShutOff();
+  }
+}
+
+BLYNK_WRITE(V21)    // Light Brightness
+{
+  btnV21 = param.asInt();
+
+  if (stateBulb == true) {  // if Bulb is ON do...
+    if (btnV21 == 1) {
+      IrSender.sendNEC(0xEF00, 0x0, 2); // Dim Up
+    }
+
+    else if (btnV21 == 2) {
+      IrSender.sendNEC(0xEF00, 0x0, 4); // Dim Up+
+    }
+
+    else if (btnV21 == -1) {
+      IrSender.sendNEC(0xEF00, 0x1, 2); // Dim Down
+    }
+
+    else if (btnV21 == -2) {
+      IrSender.sendNEC(0xEF00, 0x1, 4); // Dim Down-
+    }
+  }
+}
+
+BLYNK_WRITE(V30)    // Fan
+{
+  btnV30 = param.asInt();
+
+  if (btnV30 == 0 && stateFan == true) {
+    IrSender.sendNEC(0xEF00, 0x2, 3); // do Fan off
+    stateFan = false;                  // Fan state off
+  }
+
+  else if (btnV30 == 1) {
+    IrSender.sendNEC(0xEF00, 0x3, 3); // do Fan on
+    stateFan = true;                  // Fan state on
+
+    // If Absent 
+    AutoShutOff();
+  }
+}
+
+BLYNK_WRITE(V31)    // Fan Speed
+{
+  btnV31 = param.asInt();
+
+  if (stateFan == true) {  // if Fan is ON do...
+    if (btnV31 == 1) {
+      IrSender.sendNEC(0x10, 0x12, 2); // Speed 1
+    }
+
+    else if (btnV31 == 2) {
+      IrSender.sendNEC(0x10, 0x16, 2); // Speed 2
+    }
+
+    else if (btnV31 == 3) {
+      IrSender.sendNEC(0x10, 0x1A, 2); // Speed 3
+    }
+  }
+}
+
+BLYNK_WRITE(V32)    // Fan Timer
+{
+  btnV32 = param.asInt();
+
+  if (stateFan == true) {  // if Fan is ON do...
+    if (btnV32 == 1) {
+      IrSender.sendNEC(0x10, 0x13, 2); // 1 Hr
+    }
+
+    else if (btnV32 == 2) {
+      IrSender.sendNEC(0x10, 0x18, 2); // 2 Hr
+    }
   }
 }
