@@ -2,8 +2,8 @@
 #include <WiFi.h>
 #include "time.h"
 
-const char* ssid     = "Nazrin's Family";
-const char* password = "cheesecake6";
+const char* ssid     = "UniKL MIIT";
+//const char* password = "cheesecake6";
 
 const char* ntpServer = "asia.pool.ntp.org";
 const long  gmtOffset_sec = 28800;
@@ -15,7 +15,7 @@ void setup(){
   // Connect to Wi-Fi
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid);//, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -69,4 +69,5 @@ void printLocalTime(){
   strftime(timeWeekDay,10, "%A", &timeinfo);
   Serial.println(timeWeekDay);
   Serial.println();
+  Serial.println(&timeinfo, "%H:%M:%S");
 }

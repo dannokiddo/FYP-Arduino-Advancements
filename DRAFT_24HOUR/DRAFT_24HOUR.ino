@@ -4,13 +4,13 @@
 #define BLYNK_AUTH_TOKEN  "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
 
 // include libraries
-#include <DHT.h>                  //temp & humid
-#include <IRremote.h>
-#include <SPI.h>                  //wifi **Week6
-#include <WiFiNINA.h> 
-#include <WiFiUdp.h>              //ntp signal
-#include <RTCZero.h>              //real time clock 
-#include <BlynkSimpleWiFiNINA.h>  //Blynk **
+#include <DHT.h>                  //Temp & Humid
+#include <IRremote.h>             //Infra-Red
+#include <SPI.h>                  //WiFi
+#include <WiFiNINA.h>             //WiFi Nano
+#include <WiFiUdp.h>              //NTP Signal
+#include <RTCZero.h>              //Real Time Clock
+#include <BlynkSimpleWiFiNINA.h>  //Blynk 
 
 // define pins 
 #define temt6000pin A0
@@ -259,7 +259,7 @@ void Reset24Hr()
   nowmin == rtc.getMinutes();
 
   // (nowhr == 0) reset bool rstAC to false after 24hr
-  if ((nowmin%10) == 0) {  // every 10 mins rst
+  if ((nowmin%5) == 0) {  // every 4 mins rst
     rstAC = false;
   }
 }
@@ -270,7 +270,7 @@ void ScheduledAction_Light()
   nowmin = rtc.getMinutes();
 
   // (nowhr == 4 && rstAC == false)
-  if ((nowmin%5) == 0 && rstAC == false)  // every 5 mins
+  if ((nowmin%5) == 4 && rstAC == false)  // every 4 mins
   {
     // demo with bulb
     IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   
