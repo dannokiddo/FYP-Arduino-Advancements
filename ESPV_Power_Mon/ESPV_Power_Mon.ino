@@ -15,7 +15,7 @@ const char* pass = "";
 
 BlynkTimer timer;
 
-#define VCalibration 106.8
+#define VCalibration 83.3//1.23
 #define ICalibration 0.52
 
 EnergyMonitor emon_AC;
