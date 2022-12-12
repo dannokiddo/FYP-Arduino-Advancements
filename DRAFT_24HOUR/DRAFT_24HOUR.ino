@@ -38,6 +38,9 @@ int   periodAbsent; // absent(t)
 bool  rstAbsent;    // absent run once
 bool  periodrst;    // rst status
 
+// Appliance
+int initspeed = 6
+
 // Blynk
 int btnV10;   // AC
 int btnV11;     // AC Timer
@@ -259,8 +262,9 @@ void Reset24Hr()
   nowmin == rtc.getMinutes();
 
   // (nowhr == 0) reset bool rstAC to false after 24hr
-  if ((nowmin%5) == 0) {  // every 4 mins rst
+  if ((nowmin%5) == 4) {  // every 4 mins rst (4th min in 5 mins interval)
     rstAC = false;
+    rstFan = false;
   }
 }
 
@@ -270,7 +274,7 @@ void ScheduledAction_Light()
   nowmin = rtc.getMinutes();
 
   // (nowhr == 4 && rstAC == false)
-  if ((nowmin%5) == 4 && rstAC == false)  // every 4 mins
+  if ((nowmin%5) == 0 && rstAC == false)  // runs on mins%5. every 4 mins
   {
     // demo with bulb
     IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   
@@ -285,7 +289,15 @@ void ScheduledAction_Light()
 }
 
 //void ScheduledAction_AC
-//void ScheduledAction_Fan
+void ScheduledAction_Fan()
+{
+  if ((nowmin%5) == 1 && rstFan == false)  // runs every 2nd min in 5 mins interval
+  {
+    IrSender.sendNEC(0x0, 0x1C, 1);  // Fan ON
+
+    stateFan = true;
+  }
+}
 
 BLYNK_WRITE(V10)    // AC
 {
@@ -371,7 +383,7 @@ BLYNK_WRITE(V31)    // Fan Speed
 
   if (stateFan == true) {  // if Fan is ON do...
     if (btnV31 == 1) {
-      IrSender.sendNEC(0x10, 0x12, 2); // Speed 1
+      IrSender.sendNEC(0x0, 0x16, 9); // Speed 1 //test
     }
 
     else if (btnV31 == 2) {
@@ -390,11 +402,11 @@ BLYNK_WRITE(V32)    // Fan Timer
 
   if (stateFan == true) {  // if Fan is ON do...
     if (btnV32 == 1) {
-      IrSender.sendNEC(0x10, 0x13, 2); // 1 Hr
+      IrSender.sendNEC(0x0, 0x40, 4); // 1 Hr //test if its viable if not have tu dupe code
     }
 
     else if (btnV32 == 2) {
-      IrSender.sendNEC(0x10, 0x18, 2); // 2 Hr
+      IrSender.sendNEC(0x0, 0x40, 5); // 2 Hr
     }
   }
 }

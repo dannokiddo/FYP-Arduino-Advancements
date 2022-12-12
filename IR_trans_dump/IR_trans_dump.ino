@@ -35,7 +35,7 @@ void loop() {
   delay(2000);*/
 
   // AC
-  uint32_t tRawDataOn[]={0x807F807F, 0x37C807F, 0x6A9504FB};    // On
+  /*uint32_t tRawDataOn[]={0x807F807F, 0x37C807F, 0x6A9504FB};    // On
   IrSender.sendPulseDistanceWidthFromArray(38, 550, 1650, 550, 1650, 550, 600, &tRawDataOn[0], 95, 
     PROTOCOL_IS_LSB_FIRST, 100, 1);
   delay(2000);
@@ -58,5 +58,15 @@ void loop() {
   uint32_t tRawDataOff[]={0x807F807F, 0x27D807F, 0x6A9504FB};    // Off
   IrSender.sendPulseDistanceWidthFromArray(38, 500, 1700, 550, 1650, 550, 550, &tRawDataOff[0], 95, 
     PROTOCOL_IS_LSB_FIRST, 500, 1);
-  delay(2000);
+  delay(2000);*/
+
+  // Fan One Home
+  IrSender.sendNEC(0x0, 0x1C, 1);
+  delay(1000);
+  IrSender.sendNEC(0x0, 0x16, 3);
+  delay(1000);
+  IrSender.sendNEC(0x0, 0x40, 3);
+  delay(1000);
+  IrSender.sendNEC(0x0, 0x1C, 1);
+  delay(1000);
 }
