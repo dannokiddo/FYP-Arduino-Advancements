@@ -1,12 +1,19 @@
 #include <Fuzzy.h>
+#include <DHT.h>
 
-Fuzzy  *fuzzy = new Fuzzy();
+Fuzzy   *fuzzy = new Fuzzy();
+#define dhtpin      4 
+#define DHTTYPE DHT11
+DHT     dht(dhtpin, DHTTYPE);      // DHT
+
+float t;
 
 void setup()
 {
   Serial.begin(9600);
+  dht.begin();
 
-  randomSeed(analogRead(2));
+  randomSeed(digitalRead(4));
 
   FuzzyInput *temp = new FuzzyInput(1);
 
@@ -29,6 +36,8 @@ void setup()
   tempOut -> addFuzzySet(lowSet);
   tempOut -> addFuzzySet(midSet);
   tempOut -> addFuzzySet(highSet);
+
+  fuzzy -> addFuzzyOutput(tempOut);
 
   // Rule 01 - if low, then set high
   FuzzyRuleAntecedent *ifTempLow = new FuzzyRuleAntecedent();
@@ -64,14 +73,16 @@ void setup()
 
 void loop()
 {
-  int input = digitalRead(2);//random(18, 34);
+  dhtsense();
+  //int input = digitalRead(2);//random(18, 34);
+  int temp = t;
 
   // Printing something
   Serial.println("\n\n\nEntrance: ");
   Serial.print("\t\t\tTemperature: ");
-  Serial.println(input);
+  Serial.println(temp);
   // Set the random value as an input
-  fuzzy->setInput(1, input);
+  fuzzy->setInput(1, temp);
   // Running the Fuzzification
   fuzzy->fuzzify();
   // Running the Defuzzification
@@ -82,4 +93,29 @@ void loop()
   Serial.println(output);
   // wait 12 seconds
   delay(12000);
+}
+
+//##################################################################################
+void dhtsense() { // Temperature & Humidity
+  // temp & humid //readcan take 250ms -  2s
+  float h = dht.readHumidity();
+  t = dht.readTemperature();
+  float f = dht.readTemperature(true);
+  
+  if (isnan(h) || isnan(t) || isnan(f)) { //if read fail then exit
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  float hic = dht.computeHeatIndex(t, h, false); //false->notFarhrenheit = Celcius
+
+  Serial.println("Humidity    : " + (String)h + " %");
+  //Serial.print("    ");
+  Serial.println("Temperature : " + (String)t + " °C");
+  //Serial.println("Heat Index  : " + (String)hic + " °C \n");
+  delay(500);
+
+  /*Blynk.virtualWrite(V1, h);  //Blynk Input
+  Blynk.virtualWrite(V2, t);*/
+  return;
 }

@@ -27,8 +27,8 @@ char  ssid[] = "Nazrin's Family";  // Wifi SSID
 char  pass[] = "cheesecake6";      // Wifi password
 
 Fuzzy  *fuzzy = new Fuzzy();
-
 DHT   dht(dhtpin, DHTTYPE);      // DHT
+float h, t, f;                   // DHT var; humid, temp, apparant temp
 int   motion;       // read      // Microwave Radar
 int   presence;     // object (human)
 
@@ -101,6 +101,8 @@ void setup() {
     Serial.println();
     }//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  FuzzySetup();
+
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 }
 
@@ -111,6 +113,8 @@ void loop() {
 
   //Serial Output
   SerialOutput();
+
+  FuzzySetTemp();
 
   //Runs Scheduled Action
   ScheduledAction_AC();
@@ -206,9 +210,9 @@ void ambient() {  // Ambient Lighting
 
 void dhtsense() { // Temperature & Humidity
   // temp & humid //readcan take 250ms -  2s
-  float h = dht.readHumidity();
-  float t = dht.readTemperature();
-  float f = dht.readTemperature(true);
+  h = dht.readHumidity();
+  t = dht.readTemperature();
+  f = dht.readTemperature(true);
   
   if (isnan(h) || isnan(t) || isnan(f)) { //if read fail then exit
     Serial.println(F("Failed to read from DHT sensor!"));
@@ -361,26 +365,26 @@ void FuzzySetup()
   fuzzy -> addFuzzyRule(fuzzyRule03);
 }
 
-void FuzzySetTemp(float t)
+void FuzzySetTemp()
 {
-  int temp = (t, 0);
+  int temp = t;
   fuzzy -> setInput(1, temp);
 
   fuzzy -> fuzzify();
 
   int tempSet = fuzzy -> defuzzify(1);
 
-  if (tempSet == 25) {
+  if (tempSet == 25 && stateAC) {
     //IrSender.send();
   }
 
-  else if (tempSet > 25) {
+  else if (tempSet > 25 && stateAC) {
     ACTemp = 25 - tempSet;
 
     //IrSender.send();
   }
   
-  else if (tempSet < 25) {
+  else if (tempSet < 25 && stateAC) {
     ACTemp = tempSet - 25;
 
     //IrSender.send();
