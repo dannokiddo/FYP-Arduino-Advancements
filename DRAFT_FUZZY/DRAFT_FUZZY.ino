@@ -11,6 +11,7 @@
 #include <WiFiUdp.h>              //NTP Signal
 #include <RTCZero.h>              //Real Time Clock
 #include <BlynkSimpleWiFiNINA.h>  //Blynk 
+#include <Fuzzy.h>                //Fuzzy lib
 
 // define pins 
 #define temt6000pin A0
@@ -24,6 +25,8 @@
 int   status = WL_IDLE_STATUS;     // Wifi status
 char  ssid[] = "Nazrin's Family";  // Wifi SSID
 char  pass[] = "cheesecake6";      // Wifi password
+
+Fuzzy  *fuzzy = new Fuzzy();
 
 DHT   dht(dhtpin, DHTTYPE);      // DHT
 int   motion;       // read      // Microwave Radar
@@ -39,6 +42,7 @@ bool  rstAbsent;    // absent run once
 bool  periodrst;    // rst status
 
 // Appliance
+int ACTemp;
 int initspeed = 6;
 
 // Blynk
@@ -109,7 +113,8 @@ void loop() {
   SerialOutput();
 
   //Runs Scheduled Action
-  ScheduledAction_Light();
+  ScheduledAction_AC();
+  ScheduledAction_Fan();
 
   AutoShutOff();  // Shut OFF when Absent
   Reset24Hr();    // reset bool rstAC to false after 24hr
@@ -268,7 +273,7 @@ void Reset24Hr()
   }
 }
 
-void ScheduledAction_Light()
+void ScheduledAction_AC()
 {
   //nowhr = rtc.getHours();   //get instant hour time
   nowmin = rtc.getMinutes();
@@ -296,6 +301,89 @@ void ScheduledAction_Fan()
     IrSender.sendNEC(0x0, 0x1C, 1);  // Fan ON
 
     stateFan = true;
+  }
+}
+
+void FuzzySetup()
+{
+  FuzzyInput *temp = new FuzzyInput(1);
+
+  FuzzySet *low = new FuzzySet(18, 21, 21, 24);
+  FuzzySet *mid = new FuzzySet(23, 26, 26, 29);
+  FuzzySet *high = new FuzzySet(28, 31, 31, 34);
+
+  temp -> addFuzzySet(low);
+  temp -> addFuzzySet(mid);
+  temp -> addFuzzySet(high);
+
+  fuzzy -> addFuzzyInput(temp);
+
+  FuzzyOutput *tempOut = new FuzzyOutput(1);
+
+  FuzzySet *lowSet = new FuzzySet(16, 18, 18, 20);
+  FuzzySet *midSet = new FuzzySet(19, 21, 21, 23);
+  FuzzySet *highSet = new FuzzySet(22, 24, 24, 26);
+
+  tempOut -> addFuzzySet(lowSet);
+  tempOut -> addFuzzySet(midSet);
+  tempOut -> addFuzzySet(highSet);
+
+  fuzzy->addFuzzyOutput(tempOut);
+
+  // Rule 01 - if low, then set high
+  FuzzyRuleAntecedent *ifTempLow = new FuzzyRuleAntecedent();
+  ifTempLow -> joinSingle(low);
+
+  FuzzyRuleConsequent *thenSetHigh = new FuzzyRuleConsequent();
+  thenSetHigh -> addOutput(highSet);
+
+  FuzzyRule *fuzzyRule01 = new FuzzyRule(1, ifTempLow, thenSetHigh);
+  fuzzy -> addFuzzyRule(fuzzyRule01);
+
+  // Rule 02 - if mid, then set mid
+  FuzzyRuleAntecedent *ifTempMid = new FuzzyRuleAntecedent();
+  ifTempLow -> joinSingle(mid);
+
+  FuzzyRuleConsequent *thenSetMid = new FuzzyRuleConsequent();
+  thenSetHigh -> addOutput(midSet);
+
+  FuzzyRule *fuzzyRule02 = new FuzzyRule(2, ifTempMid, thenSetMid);
+  fuzzy -> addFuzzyRule(fuzzyRule02);
+
+  // Rule 03 - if high, then set low
+  FuzzyRuleAntecedent *ifTempHigh = new FuzzyRuleAntecedent();
+  ifTempLow -> joinSingle(high);
+
+  FuzzyRuleConsequent *thenSetLow = new FuzzyRuleConsequent();
+  thenSetHigh -> addOutput(lowSet);
+
+  FuzzyRule *fuzzyRule03 = new FuzzyRule(3, ifTempHigh, thenSetLow);
+  fuzzy -> addFuzzyRule(fuzzyRule03);
+}
+
+void FuzzySetTemp(float t)
+{
+  int temp = (t, 0);
+  fuzzy -> setInput(1, temp);
+
+  fuzzy -> fuzzify();
+
+  int tempSet = fuzzy -> defuzzify(1);
+
+  if (tempSet == 25) {
+    //IrSender.send();
+  }
+
+  else if (tempSet > 25) {
+    ACTemp = 25 - tempSet;
+
+    //IrSender.send();
+  }
+  
+  else if (tempSet < 25) {
+    ACTemp = tempSet - 25;
+
+    //IrSender.send();
   }
 }
 
