@@ -43,7 +43,22 @@ bool  periodrst;    // rst status
 
 // Appliance
 int ACTemp;
+int tempSet;
 int initspeed = 6;
+
+uint32_t ONRawData[]={0x74070683, 0x0};   // AC ON
+uint32_t OFFRawData[]={0x82070683, 0x0};  // AC OFF
+uint32_t Temp16RawData[]={0x2010683, 0x0};
+uint32_t Temp17RawData[]={0x12010683, 0x0};
+uint32_t Temp18RawData[]={0x22010683, 0x0};
+uint32_t Temp19RawData[]={0x32010683, 0x0};
+uint32_t Temp20RawData[]={0x42010683, 0x0};
+uint32_t Temp21RawData[]={0x52010683, 0x0};
+uint32_t Temp22RawData[]={0x62010683, 0x0};
+uint32_t Temp23RawData[]={0x72010683, 0x0};
+uint32_t Temp24RawData[]={0x82010683, 0x0};
+uint32_t Temp25RawData[]={0x92010683, 0x0};
+uint32_t Temp26RawData[]={0xA2010683, 0x0};
 
 // Blynk
 int btnV10;   // AC
@@ -114,11 +129,10 @@ void loop() {
   //Serial Output
   SerialOutput();
 
-  FuzzySetTemp();
-
   //Runs Scheduled Action
-  ScheduledAction_AC();
-  ScheduledAction_Fan();
+  //ScheduledAction_AC();
+  //ScheduledAction_Fan();
+  FuzzySetTemp();
 
   AutoShutOff();  // Shut OFF when Absent
   Reset24Hr();    // reset bool rstAC to false after 24hr
@@ -261,7 +275,12 @@ void AutoShutOff()  // Shut Off
 {  
   if (periodAbsent - 120000 >= 0) {     // after 2 mins Shut OFF
     // OFF appliances
-    IrSender.sendNEC(0xEF00, 0x2, 3);   // OFF bulb
+    IrSender.sendNEC(0xEF00, 0x2, 3);         // OFF bulb
+    IrSender.sendNEC(0x0, 0x1C, 0);           // OFF fan
+    // OFF AC
+    IrSender.sendPulseDistanceWidthFromArray
+    (38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    
   }
 }
 
@@ -289,12 +308,15 @@ void ScheduledAction_AC()
     IrSender.sendNEC(0xEF00, 0x3, 1);//on bulb   
     IrSender.sendNEC(0xEF00, 0x7, 1);//white     
 
-    uint32_t tRawData[]={0x74070683, 0x0};    // do AC on
-    IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    // do AC on
+    IrSender.sendPulseDistanceWidthFromArray
+    (38, 8950, 4500, 600, 1650, 600, 550, &ONRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    
     FuzzySetTemp();                           // set AC temp
 
     stateAC = true;             //AC state on
     rstAC = true;               //rst state: done run once
+    Serial.println("AC State" + stateAC);
   }
 }
 
@@ -368,60 +390,52 @@ void FuzzySetup()
 
 void FuzzySetTemp()
 {
-  int temp = t;
-  fuzzy -> setInput(1, temp);
+  //int temp = t;
+  fuzzy -> setInput(1, t);
 
   fuzzy -> fuzzify();
 
-  int tempSet = fuzzy -> defuzzify(1);
+  tempSet = fuzzy -> defuzzify(1);
+  Serial.println("Fuzzy Temp: " + String(tempSet));
 
   if (stateAC) {    // if stateAC is true/ON then tempSet is sent
     switch (tempSet) {
       case 26:
-        uint32_t tRawData[]={0xA2010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp26RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 25:
-        uint32_t tRawData[]={0x92010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 550, &Temp25RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 24:
-        uint32_t tRawData[]={0x82010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 550, 1700, 550, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 550, 1700, 550, 550, &Temp24RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 23:
-        uint32_t tRawData[]={0x72010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp23RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 22:
-        uint32_t tRawData[]={0x62010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4500, 600, 1650, 600, 550, &Temp22RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;        
       case 21:
-        uint32_t tRawData[]={0x52010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4550, 550, 1700, 550, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4550, 550, 1700, 550, 550, &Temp21RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 20:
-        uint32_t tRawData[]={0x42010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4450, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4450, 600, 1650, 600, 550, &Temp20RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 19:
-        uint32_t tRawData[]={0x32010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp19RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 18:
-        uint32_t tRawData[]={0x22010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp18RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 17:
-        uint32_t tRawData[]={0x12010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 500, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 500, &Temp17RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       case 16:
-        uint32_t tRawData[]={0x2010683, 0x0};
-        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &Temp16RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
         break;
       default:
+        Serial.println("AC temp control Err");
+        break;
     }
   }
 }
@@ -431,16 +445,41 @@ BLYNK_WRITE(V10)    // AC
   btnV10 = param.asInt();
 
   if (btnV10 == 0 && stateAC == true) {
-    IrSender.sendNEC(0xEF00, 0x2, 3);//do AC off
+    // OFF AC
+    IrSender.sendPulseDistanceWidthFromArray
+    (38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
     stateAC = false;                 //AC state off
   }
 
   else if (btnV10 == 1) {
-    IrSender.sendNEC(0xEF00, 0x3, 3); //do AC on
+    IrSender.sendPulseDistanceWidthFromArray
+    (38, 8950, 4500, 600, 1650, 600, 550, &ONRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
     stateAC = true;                   //AC state on
 
     // If Absent 
     AutoShutOff();
+  }
+}
+
+BLYNK_WRITE(V12)    // AC Up Temp
+{
+  btnV12 = param.asInt();
+
+  if (btnV12 == 1 && stateAC == true) {
+    uint32_t UPRawData[]={0x92030683, 0x0};
+    IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &UPRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    delay(5000);
+  }
+}
+
+BLYNK_WRITE(V13)    // AC Down Temp
+{
+  btnV13 = param.asInt();
+
+  if (btnV13 == 1 && stateAC == true) {
+    uint32_t DOWNRawData[]={0x82030683, 0x0};
+    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &DOWNRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    delay(5000);
   }
 }
 

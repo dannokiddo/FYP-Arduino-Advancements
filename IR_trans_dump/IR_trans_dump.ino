@@ -61,12 +61,33 @@ void loop() {
   delay(2000);*/
 
   // Fan One Home
-  IrSender.sendNEC(0x0, 0x1C, 1);
+  /*IrSender.sendNEC(0x0, 0x1C, 1);
   delay(1000);
   IrSender.sendNEC(0x0, 0x16, 3);
   delay(1000);
   IrSender.sendNEC(0x0, 0x40, 3);
   delay(1000);
   IrSender.sendNEC(0x0, 0x1C, 1);
-  delay(1000);
+  delay(1000);*/
+
+  //AC Hisense
+  uint32_t tRawData[]={0x74070683, 0x0};
+  IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &tRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(2000);
+  uint32_t UPRawData[]={0x92030683, 0x0};
+  IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &UPRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(5000);
+  
+  IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &UPRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(5000);
+  uint32_t DOWNRawData[]={0x82030683, 0x0};
+  IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &DOWNRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(5000);
+  
+  IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &DOWNRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(5000);
+  uint32_t OFFRawData[]={0x82070683, 0x0};
+  IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+  delay(3000);
+
 }

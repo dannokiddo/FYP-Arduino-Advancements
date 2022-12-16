@@ -11,10 +11,11 @@ void setup()
   FuzzyInput *temp = new FuzzyInput(1);
 
   FuzzySet *low = new FuzzySet(18, 21, 21, 24);
-  temp -> addFuzzySet(low);
   FuzzySet *mid = new FuzzySet(23, 26, 26, 29);
-  temp -> addFuzzySet(mid);
   FuzzySet *high = new FuzzySet(28, 31, 31, 34);
+
+  temp -> addFuzzySet(low);
+  temp -> addFuzzySet(mid);
   temp -> addFuzzySet(high);
 
   fuzzy -> addFuzzyInput(temp);
@@ -22,13 +23,12 @@ void setup()
   FuzzyOutput *tempOut = new FuzzyOutput(1);
 
   FuzzySet *lowSet = new FuzzySet(16, 18, 18, 20);
-  tempOut -> addFuzzySet(lowSet);
   FuzzySet *midSet = new FuzzySet(19, 21, 21, 23);
-  tempOut -> addFuzzySet(midSet);
   FuzzySet *highSet = new FuzzySet(22, 24, 24, 26);
-  tempOut -> addFuzzySet(highSet);
 
-  fuzzy->addFuzzyOutput(tempOut);
+  tempOut -> addFuzzySet(lowSet);
+  tempOut -> addFuzzySet(midSet);
+  tempOut -> addFuzzySet(highSet);
 
   // Rule 01 - if low, then set high
   FuzzyRuleAntecedent *ifTempLow = new FuzzyRuleAntecedent();
