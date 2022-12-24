@@ -1,85 +1,90 @@
 #include <Fuzzy.h>
 
-Fuzzy  *fuzzy = new Fuzzy();
+Fuzzy *fuzzy = new Fuzzy();
 
-void setup()
-{
+void setup() {
+  // put your setup code here, to run once:
   Serial.begin(9600);
+  
+  randomSeed(analogRead(2));    // Set a random seed
 
-  randomSeed(analogRead(2));
+  FuzzyInput *temp = new FuzzyInput(1);     // Instantiating a FuzzyInput
 
-  FuzzyInput *temp = new FuzzyInput(1);
+  FuzzySet *cold = new FuzzySet(15, 20, 20, 25);  // Instantiating a FuzzySet
+  FuzzySet *room = new FuzzySet(23, 27, 27, 30);
+  FuzzySet *warm = new FuzzySet(28, 33, 33, 38);
 
-  FuzzySet *low = new FuzzySet(18, 21, 21, 24);
-  temp -> addFuzzySet(low);
-  FuzzySet *mid = new FuzzySet(23, 26, 26, 29);
-  temp -> addFuzzySet(mid);
-  FuzzySet *high = new FuzzySet(28, 31, 31, 34);
-  temp -> addFuzzySet(high);
+  temp->addFuzzySet(cold);    // Including the FuzzySet into FuzzyInput
+  temp->addFuzzySet(room);
+  temp->addFuzzySet(warm);
 
-  fuzzy -> addFuzzyInput(temp);
+  fuzzy->addFuzzyInput(temp);     // Including the FuzzyInput into Fuzzy
 
-  FuzzyOutput *tempOut = new FuzzyOutput(1);
+  FuzzyOutput *setAC = new FuzzyOutput(1);  // Instantiating a FuzzyOutput
 
-  FuzzySet *lowSet = new FuzzySet(16, 18, 18, 20);
-  tempOut -> addFuzzySet(lowSet);
-  FuzzySet *midSet = new FuzzySet(19, 21, 21, 23);
-  tempOut -> addFuzzySet(midSet);
-  FuzzySet *highSet = new FuzzySet(22, 24, 24, 26);
-  tempOut -> addFuzzySet(highSet);
+  FuzzySet *setLow = new FuzzySet(16, 18, 18, 20);  // Instantiating a FuzzySet
+  FuzzySet *setMid = new FuzzySet(19, 21, 21, 23);
+  FuzzySet *setHot = new FuzzySet(22, 24, 24, 26);
 
-  fuzzy->addFuzzyOutput(tempOut);
+  setAC->addFuzzySet(setLow);
+  setAC->addFuzzySet(setMid);
+  setAC->addFuzzySet(setHot);
 
-  // Rule 01 - if low, then set high
-  FuzzyRuleAntecedent *ifTempLow = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(low);
+  fuzzy->addFuzzyOutput(setAC);
 
-  FuzzyRuleConsequent *thenSetHigh = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(highSet);
 
-  FuzzyRule *fuzzyRule01 = new FuzzyRule(1, ifTempLow, thenSetHigh);
-  fuzzy -> addFuzzyRule(fuzzyRule01);
+  // Building FuzzyRule "IF temp = cold THEN setAC = hot"
+  FuzzyRuleAntecedent *ifTempCold = new FuzzyRuleAntecedent();
+  ifTempCold->joinSingle(cold);
 
-  // Rule 02 - if mid, then set mid
-  FuzzyRuleAntecedent *ifTempMid = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(mid);
+  FuzzyRuleConsequent *thenSetHot = new FuzzyRuleConsequent();
+  thenSetHot->addOutput(setHot);
+
+  FuzzyRule *fuzzyRule01 = new FuzzyRule(1, ifTempCold, thenSetHot);
+  fuzzy->addFuzzyRule(fuzzyRule01);
+
+
+  // Building FuzzyRule "IF temp = room THEN setAC = mid"
+  FuzzyRuleAntecedent *ifTempRoom = new FuzzyRuleAntecedent();
+  ifTempRoom->joinSingle(room);
 
   FuzzyRuleConsequent *thenSetMid = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(midSet);
+  thenSetMid->addOutput(setMid);
 
-  FuzzyRule *fuzzyRule02 = new FuzzyRule(2, ifTempMid, thenSetMid);
-  fuzzy -> addFuzzyRule(fuzzyRule02);
+  FuzzyRule *fuzzyRule02 = new FuzzyRule(2, ifTempRoom, thenSetMid);
+  fuzzy->addFuzzyRule(fuzzyRule02);
 
-  // Rule 03 - if high, then set low
-  FuzzyRuleAntecedent *ifTempHigh = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(high);
+
+  // Building FuzzyRule "IF temp = warm THEN setAC = low"
+  FuzzyRuleAntecedent *ifTempWarm = new FuzzyRuleAntecedent();
+  ifTempWarm->joinSingle(warm);
 
   FuzzyRuleConsequent *thenSetLow = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(lowSet);
+  thenSetLow->addOutput(setLow);
 
-  FuzzyRule *fuzzyRule03 = new FuzzyRule(3, ifTempHigh, thenSetLow);
-  fuzzy -> addFuzzyRule(fuzzyRule03);
-
+  FuzzyRule *fuzzyRule03 = new FuzzyRule(3, ifTempWarm, thenSetLow);
+  fuzzy->addFuzzyRule(fuzzyRule03);
 }
 
-void loop()
-{
+void loop() {
+  // put your main code here, to run repeatedly:
+
   int input = random(18, 34);
 
-  // Printing something
   Serial.println("\n\n\nEntrance: ");
-  Serial.print("\t\t\tTemperature: ");
+  Serial.print("\t\tTemperature: ");
   Serial.println(input);
-  // Set the random value as an input
+
   fuzzy->setInput(1, input);
-  // Running the Fuzzification
+
   fuzzy->fuzzify();
-  // Running the Defuzzification
+
   float output = fuzzy->defuzzify(1);
-  // Printing something
+
   Serial.println("Result: ");
-  Serial.print("\t\t\tTempSet: ");
+  Serial.print("\t\tSet AC Temp: ");
   Serial.println(output);
-  // wait 12 seconds
+
   delay(12000);
+
 }

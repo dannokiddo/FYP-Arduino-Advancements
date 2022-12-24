@@ -23,7 +23,7 @@
 
 // define identifiers
 int   status = WL_IDLE_STATUS;     // Wifi status
-char  ssid[] = "UiTM WiFi Guest";//"Nazrin's Family";  // Wifi SSID
+char  ssid[] = "UiTM_HOTSPOT";//"Nazrin's Family";  // Wifi SSID
 char  pass[] = "";//"cheesecake6";      // Wifi password
 
 Fuzzy  *fuzzy = new Fuzzy();
@@ -131,7 +131,7 @@ void loop() {
 
   //Runs Scheduled Action
   //ScheduledAction_AC();
-  //ScheduledAction_Fan();
+  ScheduledAction_Fan();
   FuzzySetTemp();
 
   AutoShutOff();  // Shut OFF when Absent
