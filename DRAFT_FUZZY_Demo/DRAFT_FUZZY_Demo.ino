@@ -333,59 +333,62 @@ void ScheduledAction_Fan()
 
 void FuzzySetup()
 {
-  FuzzyInput *temp = new FuzzyInput(1);
+  FuzzyInput *temp = new FuzzyInput(1);     // Instantiating a FuzzyInput
 
-  FuzzySet *low = new FuzzySet(18, 21, 21, 24);
-  FuzzySet *mid = new FuzzySet(23, 26, 26, 29);
-  FuzzySet *high = new FuzzySet(28, 31, 31, 34);
+  FuzzySet *cold = new FuzzySet(15, 20, 20, 25);  // Instantiating a FuzzySet
+  FuzzySet *room = new FuzzySet(23, 27, 27, 30);
+  FuzzySet *warm = new FuzzySet(28, 33, 33, 38);
 
-  temp -> addFuzzySet(low);
-  temp -> addFuzzySet(mid);
-  temp -> addFuzzySet(high);
+  temp->addFuzzySet(cold);    // Including the FuzzySet into FuzzyInput
+  temp->addFuzzySet(room);
+  temp->addFuzzySet(warm);
 
-  fuzzy -> addFuzzyInput(temp);
+  fuzzy->addFuzzyInput(temp);     // Including the FuzzyInput into Fuzzy
 
-  FuzzyOutput *tempOut = new FuzzyOutput(1);
+  FuzzyOutput *setAC = new FuzzyOutput(1);  // Instantiating a FuzzyOutput
 
-  FuzzySet *lowSet = new FuzzySet(16, 18, 18, 20);
-  FuzzySet *midSet = new FuzzySet(19, 21, 21, 23);
-  FuzzySet *highSet = new FuzzySet(22, 24, 24, 26);
+  FuzzySet *setLow = new FuzzySet(16, 18, 18, 20);  // Instantiating a FuzzySet
+  FuzzySet *setMid = new FuzzySet(19, 21, 21, 23);
+  FuzzySet *setHot = new FuzzySet(22, 24, 24, 26);
 
-  tempOut -> addFuzzySet(lowSet);
-  tempOut -> addFuzzySet(midSet);
-  tempOut -> addFuzzySet(highSet);
+  setAC->addFuzzySet(setLow);
+  setAC->addFuzzySet(setMid);
+  setAC->addFuzzySet(setHot);
 
-  fuzzy->addFuzzyOutput(tempOut);
+  fuzzy->addFuzzyOutput(setAC);
 
-  // Rule 01 - if low, then set high
-  FuzzyRuleAntecedent *ifTempLow = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(low);
 
-  FuzzyRuleConsequent *thenSetHigh = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(highSet);
+  // Building FuzzyRule "IF temp = cold THEN setAC = hot"
+  FuzzyRuleAntecedent *ifTempCold = new FuzzyRuleAntecedent();
+  ifTempCold->joinSingle(cold);
 
-  FuzzyRule *fuzzyRule01 = new FuzzyRule(1, ifTempLow, thenSetHigh);
-  fuzzy -> addFuzzyRule(fuzzyRule01);
+  FuzzyRuleConsequent *thenSetHot = new FuzzyRuleConsequent();
+  thenSetHot->addOutput(setHot);
 
-  // Rule 02 - if mid, then set mid
-  FuzzyRuleAntecedent *ifTempMid = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(mid);
+  FuzzyRule *fuzzyRule01 = new FuzzyRule(1, ifTempCold, thenSetHot);
+  fuzzy->addFuzzyRule(fuzzyRule01);
+
+
+  // Building FuzzyRule "IF temp = room THEN setAC = mid"
+  FuzzyRuleAntecedent *ifTempRoom = new FuzzyRuleAntecedent();
+  ifTempRoom->joinSingle(room);
 
   FuzzyRuleConsequent *thenSetMid = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(midSet);
+  thenSetMid->addOutput(setMid);
 
-  FuzzyRule *fuzzyRule02 = new FuzzyRule(2, ifTempMid, thenSetMid);
-  fuzzy -> addFuzzyRule(fuzzyRule02);
+  FuzzyRule *fuzzyRule02 = new FuzzyRule(2, ifTempRoom, thenSetMid);
+  fuzzy->addFuzzyRule(fuzzyRule02);
 
-  // Rule 03 - if high, then set low
-  FuzzyRuleAntecedent *ifTempHigh = new FuzzyRuleAntecedent();
-  ifTempLow -> joinSingle(high);
+
+  // Building FuzzyRule "IF temp = warm THEN setAC = low"
+  FuzzyRuleAntecedent *ifTempWarm = new FuzzyRuleAntecedent();
+  ifTempWarm->joinSingle(warm);
 
   FuzzyRuleConsequent *thenSetLow = new FuzzyRuleConsequent();
-  thenSetHigh -> addOutput(lowSet);
+  thenSetLow->addOutput(setLow);
 
-  FuzzyRule *fuzzyRule03 = new FuzzyRule(3, ifTempHigh, thenSetLow);
-  fuzzy -> addFuzzyRule(fuzzyRule03);
+  FuzzyRule *fuzzyRule03 = new FuzzyRule(3, ifTempWarm, thenSetLow);
+  fuzzy->addFuzzyRule(fuzzyRule03);
 }
 
 void FuzzySetTemp()
