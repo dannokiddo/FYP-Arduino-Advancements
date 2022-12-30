@@ -5,43 +5,68 @@
 #define BLYNK_PRINT Serial
 
 // include libraries
-#include "EmonLib.h"          //Energy Monitor
-#include <WiFi.h>             //WiFi ESP32
-#include <BlynkSimpleEsp32.h> //Blynk ESP32
+#include "EmonLib.h"          // Energy Monitor
+#include "ZMPT101B.h"         // Voltage Sensor
+#include <WiFi.h>             // WiFi ESP32
+#include <BlynkSimpleEsp32.h> // Blynk ESP32
 
 // define identifiers
-const char* ssid = "UniKL MIIT";
+const char* ssid = "UiTM_HOTSPOT";//"UniKL MIIT";
 const char* pass = "";
 
 BlynkTimer timer;
 
-#define VCalibration 240//1.23
+ZMPT101B voltageSensor(34);
 #define ICalibration 111.1
 
-EnergyMonitor emon_AC;
-EnergyMonitor emon_Fan;
-EnergyMonitor emon_Bulb;
+float V;
+float AC_W;
+float Fan_W;
+float Wattage;
 
-float kWh = 0;
-unsigned long lastmillis = millis();
+EnergyMonitor emon_AC;      //Currents Value
+EnergyMonitor emon_Fan;
+
+const unsigned long delay1s = 1000;
+unsigned long rstdelay = 0;
 
 void setup() {
+  Serial.begin(9600);
 
   WiFiConnect();
   printWiFiStatus();
 
-  emon_AC.voltage(34, VCalibration, 1.7);
-  emon_AC.current(35, ICalibration);
+  // ZMPT101B Set Up
+  Serial.println("Calibrating... Ensure that no current flows through the sensor at this moment");
+  delay(100);
+  voltageSensor.calibrate();
+  
+  Serial.println("Done!");
 
-  Serial.begin(9600);
-  timer.setInterval(5000L, AC_Mon);
+  // EmonLib Set Up Current
+  emon_AC.current(35, ICalibration);
+  emon_Fan.current(39, ICalibration);
 
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 }
 
 void loop() {
   Blynk.run();
-  timer.run();
+
+  unsigned long currentTime = millis();
+
+  if (currentTime - rstdelay >= delay1s) {
+    // Voltage
+    ZMPT_Volt();
+    Emon_Current();
+    PowerWatt();
+
+    // delay millis
+    rstdelay = currentTime;
+  }
+  else{}
+
+  
 }
 
 //########################################################################
@@ -77,31 +102,44 @@ void printWiFiStatus() {
   Serial.println(" dBm");
 }
 
-void AC_Mon()
+void ZMPT_Volt()
 {
-  emon_AC.calcVI(20, 2000);
-  kWh = kWh + emon_AC.apparentPower * (millis() - lastmillis) / 3600000000.0;
-  yield();
-  Serial.print("Vrms: ");
-  Serial.print(emon_AC.Vrms, 2);
-  Serial.print("V");
- 
-  Serial.print("\tIrms: ");
+  V = voltageSensor.getVoltageAC();
+
+  if (V <= 200) {
+    V = 0;
+    Serial.println("\n\nVoltage : " + String(V));
+    Blynk.virtualWrite(V41, V);
+  }
+  else {
+    Serial.println("\n\nVoltage  : " + String(V));
+    Blynk.virtualWrite(V41, V);
+  }
+}
+
+void Emon_Current()
+{
+  Serial.print("\n\tAC_Irms : ");
   Serial.print(emon_AC.Irms, 4);
   Serial.print("A");
- 
-  Serial.print("\tPower: ");
-  Serial.print(emon_AC.apparentPower, 4);
-  Serial.print("W");
- 
-  Serial.print("\tkWh: ");
-  Serial.print(kWh, 5);
-  Serial.println("kWh");
- 
-  lastmillis = millis();
-  
-  Blynk.virtualWrite(V40, emon_AC.apparentPower);
-  Blynk.virtualWrite(V41, kWh);
-  Blynk.virtualWrite(V42, emon_AC.Vrms);
-  Blynk.virtualWrite(V43, emon_AC.Irms);
+
+  Serial.print("  \tFan_Irms: ");
+  Serial.print(emon_Fan.Irms, 4);
+  Serial.print("A");
+
+  Blynk.virtualWrite(V42, emon_AC.Irms);
+  Blynk.virtualWrite(V43, emon_Fan.Irms);
+}
+
+void PowerWatt()
+{
+  AC_W = V * emon_AC.Irms;
+  Fan_W = V * emon_Fan.Irms;
+  Wattage = V * (AC_W + Fan_W);
+
+  Serial.print("\n\tPower AC  : " + String(AC_W));
+  Serial.print("  \tPower Fan : " + String(Fan_W));
+  Serial.println("  \tWattage   : " + String(Wattage));
+
+  Blynk.virtualWrite(V40, Wattage);
 }

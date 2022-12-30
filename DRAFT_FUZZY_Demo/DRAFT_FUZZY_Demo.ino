@@ -23,8 +23,8 @@
 
 // define identifiers
 int   status = WL_IDLE_STATUS;     // Wifi status
-char  ssid[] = "UiTM_HOTSPOT";//"Nazrin's Family";  // Wifi SSID
-char  pass[] = "";//"cheesecake6";      // Wifi password
+char  ssid[] = "ace93";//"UiTM_HOTSPOT";//"UniKL MIIT";//"Nazrin's Family";  // Wifi SSID
+char  pass[] = "anything";//"cheesecake6";      // Wifi password
 
 Fuzzy  *fuzzy = new Fuzzy();
 DHT   dht(dhtpin, DHTTYPE);      // DHT
@@ -42,9 +42,10 @@ bool  rstAbsent;    // absent run once
 bool  periodrst;    // rst status
 
 // Appliance
-int ACTemp;
-int tempSet;
-int initspeed = 6;
+int   ACTemp;
+int   tempSet;
+int   fanspeed = 6;
+bool  spdcycle = false;
 
 uint32_t ONRawData[]={0x74070683, 0x0};   // AC ON
 uint32_t OFFRawData[]={0x82070683, 0x0};  // AC OFF
@@ -272,8 +273,10 @@ void HumanPresence()  // Human Detection
 }
 
 void AutoShutOff()  // Shut Off 
-{  
-  if (periodAbsent - 120000 >= 0) {     // after 2 mins Shut OFF
+{ 
+  unsigned long nowTime = millis();
+
+  if (periodAbsent - 60000 >= 0) {     // after 2 mins (120000ms) Shut OFF
     // OFF appliances
     IrSender.sendNEC(0xEF00, 0x2, 3);         // OFF bulb
     IrSender.sendNEC(0x0, 0x1C, 0);           // OFF fan
@@ -336,8 +339,8 @@ void FuzzySetup()
   FuzzyInput *temp = new FuzzyInput(1);     // Instantiating a FuzzyInput
 
   FuzzySet *cold = new FuzzySet(15, 20, 20, 25);  // Instantiating a FuzzySet
-  FuzzySet *room = new FuzzySet(23, 27, 27, 30);
-  FuzzySet *warm = new FuzzySet(28, 33, 33, 38);
+  FuzzySet *room = new FuzzySet(23, 27, 27, 30);  // 15 min to make way for 16.7C
+  FuzzySet *warm = new FuzzySet(28, 33, 33, 38);  // 38 max to give way for 37.6C
 
   temp->addFuzzySet(cold);    // Including the FuzzySet into FuzzyInput
   temp->addFuzzySet(room);
@@ -399,7 +402,7 @@ void FuzzySetTemp()
   fuzzy -> fuzzify();
 
   tempSet = fuzzy -> defuzzify(1);
-  Serial.println("Fuzzy Temp: " + String(tempSet));
+  Serial.println("Fuzzy Temp: " + String(tempSet) + "\n\n");
 
   if (stateAC) {    // if stateAC is true/ON then tempSet is sent
     switch (tempSet) {
@@ -546,7 +549,7 @@ BLYNK_WRITE(V30)    // Fan
   }
 }
 
-BLYNK_WRITE(V31)    // Fan Speed
+/*BLYNK_WRITE(V31)    // Fan Speed
 {
   btnV31 = param.asInt();
 
@@ -563,19 +566,51 @@ BLYNK_WRITE(V31)    // Fan Speed
       IrSender.sendNEC(0x10, 0x1A, 2); // Speed 3
     }
   }
+}*/
+
+BLYNK_WRITE(V31)    // Fan Speed
+{
+  btnV31 = param.asInt();
+
+  if (btnV31 == 1 && spdcycle == false && stateFan == true) {  // if Fan is ON do...
+    IrSender.sendNEC(0x0, 0x16, 9); // Speed 1
+    fanspeed += fanspeed;
+    Blynk.virtualWrite(V33, fanspeed);
+
+    if (fanspeed == 8) {
+      spdcycle = true;
+    }   
+  }
+
+  else if (btnV31 == 1 && spdcycle == true && stateFan == true) {
+    IrSender.sendNEC(0x0, 0x16, 9); // Speed 1
+    fanspeed -= fanspeed;
+    Blynk.virtualWrite(V33, fanspeed);
+
+    if (fanspeed == 1) {
+      spdcycle = false;
+    } 
+  }
 }
 
 BLYNK_WRITE(V32)    // Fan Timer
 {
   btnV32 = param.asInt();
 
-  if (stateFan == true) {  // if Fan is ON do...
-    if (btnV32 == 1) {
-      IrSender.sendNEC(0x0, 0x40, 4); // 1 Hr //test if its viable if not have tu dupe code
+  if (stateFan == true) {   // if Fan is ON do...
+    if (btnV32 == 1) {      // 1 Hr //test if its viable if not have tu dupe code
+      IrSender.sendNEC(0x0, 0x40, 1); // 10 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 20 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 30 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 1 hr
     }
 
-    else if (btnV32 == 2) {
-      IrSender.sendNEC(0x0, 0x40, 5); // 2 Hr
+    else if (btnV32 == 2) {  // 2 Hr
+      IrSender.sendNEC(0x0, 0x40, 1); // 10 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 20 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 30 mins
+      IrSender.sendNEC(0x0, 0x40, 1); // 1 hr
+      IrSender.sendNEC(0x0, 0x40, 1); // 2 Hr
     }
   }
 }

@@ -1,10 +1,17 @@
 #include <Fuzzy.h>
+#include <DHT.h>
 
 Fuzzy *fuzzy = new Fuzzy();
+#define dhtpin    4
+#define DHTTYPE   DHT11
+DHT     dht(dhtpin, DHTTYPE);
+
+float t;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  dht.begin();
   
   randomSeed(analogRead(4));    // Set a random seed
 
@@ -69,7 +76,8 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  int input = random(18, 34);
+  //int input = random(18, 34);
+  int temp = t;
 
   Serial.println("\n\n\nEntrance: ");
   Serial.print("\t\tTemperature: ");
