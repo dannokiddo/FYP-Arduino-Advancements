@@ -24,6 +24,9 @@ float AC_W;
 float Fan_W;
 float Wattage;
 
+float AC_Current;
+float Fan_Current;
+
 EnergyMonitor emon_AC;      //Currents Value
 EnergyMonitor emon_Fan;
 
@@ -52,6 +55,9 @@ void setup() {
 
 void loop() {
   Blynk.run();
+
+  AC_Current = emon_AC.calcIrms(5588);
+  Fan_Current = emon_Fan.calcIrms(5588);
 
   unsigned long currentTime = millis();
 
@@ -120,22 +126,22 @@ void ZMPT_Volt()
 void Emon_Current()
 {
   Serial.print("\n\tAC_Irms : ");
-  Serial.print(emon_AC.Irms, 4);
+  Serial.print(AC_Current, 4);
   Serial.print("A");
 
   Serial.print("  \tFan_Irms: ");
-  Serial.print(emon_Fan.Irms, 4);
+  Serial.print(Fan_Current, 4);
   Serial.print("A");
 
-  Blynk.virtualWrite(V42, emon_AC.Irms);
-  Blynk.virtualWrite(V43, emon_Fan.Irms);
+  Blynk.virtualWrite(V42, AC_Current);
+  Blynk.virtualWrite(V43, Fan_Current);
 }
 
 void PowerWatt()
 {
-  AC_W = V * emon_AC.Irms;
-  Fan_W = V * emon_Fan.Irms;
-  Wattage = V * (AC_W + Fan_W);
+  AC_W = V * AC_Current;
+  Fan_W = V * Fan_Current;
+  Wattage = (V * (AC_W + Fan_W))/1000;
 
   Serial.print("\n\tPower AC  : " + String(AC_W));
   Serial.print("  \tPower Fan : " + String(Fan_W));

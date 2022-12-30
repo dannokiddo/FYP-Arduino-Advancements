@@ -2,6 +2,7 @@
 #define BLYNK_TEMPLATE_ID "TMPLsgwf8Dhk"
 #define BLYNK_DEVICE_NAME "NIOT DRAFT"
 #define BLYNK_AUTH_TOKEN  "HfjOm1Ku95G8TjHITGlnsLMwEtVreCru"
+#define BLYNK_PRINT Serial
 
 // include libraries
 #include <DHT.h>                  //Temp & Humid
@@ -23,7 +24,7 @@
 
 // define identifiers
 int   status = WL_IDLE_STATUS;     // Wifi status
-char  ssid[] = "ace93";//"UiTM_HOTSPOT";//"UniKL MIIT";//"Nazrin's Family";  // Wifi SSID
+char  ssid[] = "ace93";//"UniKL MIIT";//"Nazrin's Family";  // Wifi SSID
 char  pass[] = "anything";//"cheesecake6";      // Wifi password
 
 Fuzzy  *fuzzy = new Fuzzy();
@@ -132,10 +133,14 @@ void loop() {
 
   //Runs Scheduled Action
   //ScheduledAction_AC();
-  ScheduledAction_Fan();
-  FuzzySetTemp();
+  //ScheduledAction_Fan();
 
-  AutoShutOff();  // Shut OFF when Absent
+  //AutoShutOff();  // Shut OFF when Absent
+  /*if (presence == 0 && (stateAC || stateFan || stateBulb))
+  {
+    AutoShutOff();
+  }*/
+
   Reset24Hr();    // reset bool rstAC to false after 24hr
 }
 
@@ -190,7 +195,7 @@ void printWiFiStatus() {  // WiFi Status
   Serial.println(" dBm");
 }
 
-void print2digits(int number) { // Time Formatter
+String print2digits(int number) { // Time Formatter
 
   if (number < 10) {
     Serial.print("0");
@@ -209,7 +214,16 @@ void printTime() {  // Time
   print2digits(rtc.getSeconds());
   Serial.println("\n");
 
-  String time = String(rtc.getHours() + GMT) + ":" + String(rtc.getMinutes());
+  String time;
+  nowmin = rtc.getMinutes();
+
+  if (nowmin < 10) {
+    time = String(rtc.getHours() + GMT) + ":0" + String(rtc.getMinutes());    
+  }
+  else {
+    time = String(rtc.getHours() + GMT) + ":" + String(rtc.getMinutes());
+  }
+  
   Blynk.virtualWrite(V3, time);
 }
 
@@ -272,9 +286,9 @@ void HumanPresence()  // Human Detection
   }
 }
 
-void AutoShutOff()  // Shut Off 
+void AutoShutOff()  // Shut Off*
 { 
-  unsigned long nowTime = millis();
+  periodAbsent = millis();
 
   if (periodAbsent - 60000 >= 0) {     // after 2 mins (120000ms) Shut OFF
     // OFF appliances
@@ -284,6 +298,7 @@ void AutoShutOff()  // Shut Off
     IrSender.sendPulseDistanceWidthFromArray
     (38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
     
+    periodAbsent = 0;
   }
 }
 
@@ -461,50 +476,69 @@ BLYNK_WRITE(V10)    // AC
     IrSender.sendPulseDistanceWidthFromArray
     (38, 8950, 4500, 600, 1650, 600, 550, &ONRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
     stateAC = true;                   //AC state on
-
-    // If Absent 
-    AutoShutOff();
   }
 }
 
-BLYNK_WRITE(V12)    // AC Up Temp
+BLYNK_WRITE(V14)    // AC Temp. Control
 {
-  btnV12 = param.asInt();
+  int btnV14 = param.asInt();
 
-  if (btnV12 == 1 && stateAC == true) {
-    uint32_t UPRawData[]={0x92030683, 0x0};
-    IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &UPRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
-    delay(5000);
+  if (stateAC) {    // if stateAC is true/ON then tempSet is sent
+    switch (btnV14) {
+      case 26:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp26RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 25:
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 550, &Temp25RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 24:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 550, 1700, 550, 550, &Temp24RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 23:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp23RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 22:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4500, 600, 1650, 600, 550, &Temp22RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;        
+      case 21:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8900, 4550, 550, 1700, 550, 550, &Temp21RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 20:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4450, 600, 1650, 600, 550, &Temp20RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 19:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp19RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 18:
+        IrSender.sendPulseDistanceWidthFromArray(38, 8950, 4500, 600, 1650, 600, 550, &Temp18RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 17:
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1650, 600, 500, &Temp17RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      case 16:
+        IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &Temp16RawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+        break;
+      default:
+        Serial.println("AC temp control Err");
+        break;
+    }
   }
-}
-
-BLYNK_WRITE(V13)    // AC Down Temp
-{
-  btnV13 = param.asInt();
-
-  if (btnV13 == 1 && stateAC == true) {
-    uint32_t DOWNRawData[]={0x82030683, 0x0};
-    IrSender.sendPulseDistanceWidthFromArray(38, 9000, 4450, 600, 1600, 600, 500, &DOWNRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
-    delay(5000);
-  }
+  
 }
 
 BLYNK_WRITE(V20)    // Light
 {
   btnV20 = param.asInt();
 
-  if (btnV20 == 0 && stateAC == true) {
-    IrSender.sendNEC(0xEF00, 0x2, 3); //off bulb
+  if (btnV20 == 0 && stateBulb == true) {
+    IrSender.sendNEC(0xEF00, 0x2, 1); //off bulb
     stateBulb = false;                //AC state off
   }
 
   else if (btnV20 == 1) {
-    IrSender.sendNEC(0xEF00, 0x3, 3); //do bulb on
-    IrSender.sendNEC(0xEF00, 0x7, 3); //do bulb white
+    IrSender.sendNEC(0xEF00, 0x3, 1); //do bulb on
+    IrSender.sendNEC(0xEF00, 0x7, 1); //do bulb white
     stateBulb = true;                 //AC state on
-
-    // If Absent = Shut Off
-    AutoShutOff();
   }
 }
 
@@ -517,16 +551,8 @@ BLYNK_WRITE(V21)    // Light Brightness
       IrSender.sendNEC(0xEF00, 0x0, 2); // Dim Up
     }
 
-    else if (btnV21 == 2) {
-      IrSender.sendNEC(0xEF00, 0x0, 4); // Dim Up+
-    }
-
     else if (btnV21 == -1) {
       IrSender.sendNEC(0xEF00, 0x1, 2); // Dim Down
-    }
-
-    else if (btnV21 == -2) {
-      IrSender.sendNEC(0xEF00, 0x1, 4); // Dim Down-
     }
   }
 }
@@ -536,44 +562,22 @@ BLYNK_WRITE(V30)    // Fan
   btnV30 = param.asInt();
 
   if (btnV30 == 0 && stateFan == true) {
-    IrSender.sendNEC(0xEF00, 0x2, 3); // do Fan off
+    IrSender.sendNEC(0x0, 0x1C, 1); // do Fan off
     stateFan = false;                  // Fan state off
   }
-
+  
   else if (btnV30 == 1) {
-    IrSender.sendNEC(0xEF00, 0x3, 3); // do Fan on
+    IrSender.sendNEC(0x0, 0x1C, 1); // do Fan on
     stateFan = true;                  // Fan state on
-
-    // If Absent 
-    AutoShutOff();
   }
 }
-
-/*BLYNK_WRITE(V31)    // Fan Speed
-{
-  btnV31 = param.asInt();
-
-  if (stateFan == true) {  // if Fan is ON do...
-    if (btnV31 == 1) {
-      IrSender.sendNEC(0x0, 0x16, 9); // Speed 1 //test
-    }
-
-    else if (btnV31 == 2) {
-      IrSender.sendNEC(0x10, 0x16, 2); // Speed 2
-    }
-
-    else if (btnV31 == 3) {
-      IrSender.sendNEC(0x10, 0x1A, 2); // Speed 3
-    }
-  }
-}*/
 
 BLYNK_WRITE(V31)    // Fan Speed
 {
   btnV31 = param.asInt();
 
   if (btnV31 == 1 && spdcycle == false && stateFan == true) {  // if Fan is ON do...
-    IrSender.sendNEC(0x0, 0x16, 9); // Speed 1
+    IrSender.sendNEC(0x0, 0x16, 2); // Speed 1
     fanspeed += fanspeed;
     Blynk.virtualWrite(V33, fanspeed);
 
@@ -583,7 +587,7 @@ BLYNK_WRITE(V31)    // Fan Speed
   }
 
   else if (btnV31 == 1 && spdcycle == true && stateFan == true) {
-    IrSender.sendNEC(0x0, 0x16, 9); // Speed 1
+    IrSender.sendNEC(0x0, 0x16, 2); // Speed 1
     fanspeed -= fanspeed;
     Blynk.virtualWrite(V33, fanspeed);
 
@@ -597,20 +601,8 @@ BLYNK_WRITE(V32)    // Fan Timer
 {
   btnV32 = param.asInt();
 
-  if (stateFan == true) {   // if Fan is ON do...
-    if (btnV32 == 1) {      // 1 Hr //test if its viable if not have tu dupe code
-      IrSender.sendNEC(0x0, 0x40, 1); // 10 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 20 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 30 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 1 hr
-    }
-
-    else if (btnV32 == 2) {  // 2 Hr
-      IrSender.sendNEC(0x0, 0x40, 1); // 10 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 20 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 30 mins
-      IrSender.sendNEC(0x0, 0x40, 1); // 1 hr
-      IrSender.sendNEC(0x0, 0x40, 1); // 2 Hr
-    }
+  if (btnV32 == 1 && stateFan == true) {   // if Fan is ON do...
+    IrSender.sendNEC(0x0, 0x40, 1); // cycle timer
+    // 10,20, 30 mins -> 1, 2, 3, 4, 5, 6, 7, 8, 9 hr
   }
 }
