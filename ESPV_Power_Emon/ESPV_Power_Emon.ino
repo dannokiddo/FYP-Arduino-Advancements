@@ -6,7 +6,6 @@
 
 // include libraries
 #include "EmonLib.h"          // Energy Monitor
-#include "ZMPT101B.h"         // Voltage Sensor
 #include <WiFi.h>             // WiFi ESP32
 #include <BlynkSimpleEsp32.h> // Blynk ESP32
 
@@ -16,7 +15,7 @@ const char* pass = "anything";//"cheesecake6";
 
 BlynkTimer timer;
 
-ZMPT101B voltageSensor(34);
+#define VCalibration 234.6
 #define ICalibration 111.1
 
 float V;
@@ -27,6 +26,7 @@ float Wattage;
 float AC_Current;
 float Fan_Current;
 
+EnergyMonitor emon_V;       //Voltage Value
 EnergyMonitor emon_AC;      //Currents Value
 EnergyMonitor emon_Fan;
 
@@ -39,14 +39,8 @@ void setup() {
   WiFiConnect();
   printWiFiStatus();
 
-  // ZMPT101B Set Up
-  Serial.println("Calibrating... Ensure that no current flows through the sensor at this moment");
-  delay(100);
-  voltageSensor.calibrate();
-  
-  Serial.println("Done!");
-
-  // EmonLib Set Up Current
+  // EmonLib Set Up
+  emon_V.voltage(34, VCalibration, 1.7);
   emon_AC.current(35, ICalibration);
   emon_Fan.current(39, ICalibration);
 
@@ -56,16 +50,17 @@ void setup() {
 void loop() {
   Blynk.run();
 
+  emon_V.calcVI(20, 2000);
+
+  V = emon_V.Vrms;
   AC_Current = emon_AC.calcIrms(5588);
   Fan_Current = emon_Fan.calcIrms(5588);
 
   unsigned long currentTime = millis();
 
   if (currentTime - rstdelay >= delay1s) {
-    // Voltage
-    ZMPT_Volt();
-    Emon_Current();
-    PowerWatt();
+
+    Emon_VI();
 
     // delay millis
     rstdelay = currentTime;
@@ -109,33 +104,52 @@ void printWiFiStatus() {
   Serial.println(" dBm");
 }
 
-void ZMPT_Volt()
+void Emon_VI()
 {
-  V = voltageSensor.getVoltageAC();
+  if (V > 250) { Serial.println("Waiting Sensors to be calibrated");}
 
-  if (V <= 200) {
+  else if (V < 100){ 
     V = 0;
-    Serial.println("\n\nVoltage : " + String(V));
+
+    Serial.print("\n\tVoltage : ");
+    Serial.print(V, 2);
+    Serial.println("V");
+
+    Serial.print("\n\tAC_Irms : ");
+    Serial.print(AC_Current, 4);
+    Serial.print("A");
+
+    Serial.print("  \tFan_Irms: ");
+    Serial.print(Fan_Current, 4);
+    Serial.print("A");
+
     Blynk.virtualWrite(V41, V);
+    Blynk.virtualWrite(V42, AC_Current);
+    Blynk.virtualWrite(V43, Fan_Current);
+
+    PowerWatt();
   }
+
   else {
-    Serial.println("\n\nVoltage  : " + String(V));
+    Serial.print("\n\tVoltage : ");
+    Serial.print(V, 2);
+    Serial.println("V");
+
+    Serial.print("\n\tAC_Irms : ");
+    Serial.print(AC_Current, 4);
+    Serial.print("A");
+
+    Serial.print("  \tFan_Irms: ");
+    Serial.print(Fan_Current, 4);
+    Serial.print("A");
+
     Blynk.virtualWrite(V41, V);
+    Blynk.virtualWrite(V42, AC_Current);
+    Blynk.virtualWrite(V43, Fan_Current);
+
+    PowerWatt();
   }
-}
-
-void Emon_Current()
-{
-  Serial.print("\n\tAC_Irms : ");
-  Serial.print(AC_Current, 4);
-  Serial.print("A");
-
-  Serial.print("  \tFan_Irms: ");
-  Serial.print(Fan_Current, 4);
-  Serial.print("A");
-
-  Blynk.virtualWrite(V42, AC_Current);
-  Blynk.virtualWrite(V43, Fan_Current);
+  
 }
 
 void PowerWatt()

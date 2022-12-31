@@ -136,10 +136,10 @@ void loop() {
   //ScheduledAction_Fan();
 
   //AutoShutOff();  // Shut OFF when Absent
-  /*if (presence == 0 && (stateAC || stateFan || stateBulb))
+  if (presence == 0 && (stateAC || stateFan || stateBulb))
   {
     AutoShutOff();
-  }*/
+  }
 
   Reset24Hr();    // reset bool rstAC to false after 24hr
 }
@@ -195,7 +195,7 @@ void printWiFiStatus() {  // WiFi Status
   Serial.println(" dBm");
 }
 
-String print2digits(int number) { // Time Formatter
+void print2digits(int number) { // Time Formatter
 
   if (number < 10) {
     Serial.print("0");

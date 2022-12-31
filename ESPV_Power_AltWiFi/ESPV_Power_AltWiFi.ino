@@ -11,8 +11,8 @@
 #include <BlynkSimpleEsp32.h> // Blynk ESP32
 
 // define identifiers
-const char* ssid = "ace93";//"UniKL MIIT";"Nazrin's Family";
-const char* pass = "anything";//"cheesecake6";
+const char* ssid = "Nazrin's Family";//"UiTM_HOTSPOT";//"UniKL MIIT";
+const char* pass = "cheesecake6";
 
 BlynkTimer timer;
 
@@ -37,7 +37,7 @@ void setup() {
   Serial.begin(9600);
 
   WiFiConnect();
-  printWiFiStatus();
+  //printWiFiStatus();
 
   // ZMPT101B Set Up
   Serial.println("Calibrating... Ensure that no current flows through the sensor at this moment");
@@ -79,16 +79,18 @@ void loop() {
 
 void WiFiConnect() {
   // Connect to Wi-Fi
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.mode(WIFI_STA); //Optional
-  WiFi.begin(ssid, pass);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.println("WiFi connected.");
+  int status = WL_IDLE_STATUS;
+    Serial.println("\nConnecting");
+    WiFi.begin(ssid, pass);
+    while(status != WL_CONNECTED){
+        delay(500);
+        status = WiFi.status();
+        Serial.println(status);
+    }
+
+    Serial.println("\nConnected to the WiFi network");
+    Serial.print("Local ESP32 IP: ");
+    Serial.println(WiFi.localIP());
 }
 
 void printWiFiStatus() {
