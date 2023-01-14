@@ -1,5 +1,5 @@
 #define human 21
-#define led 7
+#define led 13
 
 void setup() {
   // put your setup code here, to run once:
@@ -16,7 +16,7 @@ void loop() {
 
   Serial.println(motion);
 
-  if (motion == HIGH)
+  if (motion > 0)
   {
     digitalWrite(led, HIGH);
     Serial.println("Presence");
@@ -26,4 +26,5 @@ void loop() {
     digitalWrite(led, LOW);
     Serial.println("Vacant");
   }
+  delay(100);
 }

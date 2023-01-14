@@ -24,8 +24,8 @@
 
 // define identifiers
 int   status = WL_IDLE_STATUS;     // Wifi status
-char  ssid[] = "Nazrin's Family";//"UniKL MIIT";//"ace93";  // Wifi SSID
-char  pass[] = "cheesecake6";// "anything";     // Wifi password
+char  ssid[] = "ace93";//;"Nazrin's Family";"UniKL MIIT";  // Wifi SSID
+char  pass[] = "anything";// "anything";"cheesecake6";     // Wifi password
 
 Fuzzy  *fuzzy = new Fuzzy();
 DHT   dht(dhtpin, DHTTYPE);      // DHT
@@ -72,12 +72,14 @@ int btnV21;     // Light Brightness
 int btnV30;   // Fan
 int btnV31;     // Fan Speed
 int btnV32;     // Fan Timer
+int btnV50;   // Scheduler
 bool rstAC = false;
 bool rstFan = false;
 bool rstBulb = false;
 bool stateAC = false;
 bool stateFan = false;
 bool stateBulb = false;
+bool schedule = false;
 
 //==================================================================================
 void setup() {
@@ -132,8 +134,7 @@ void loop() {
   SerialOutput();
 
   //Runs Scheduled Action
-  ScheduledAction_AC();
-  ScheduledAction_Fan();
+  Scheduler();
 
   //AutoShutOff();
 
@@ -147,6 +148,7 @@ void SerialOutput() { // Serial Monitor Output
   ambient();
   dhtsense();
   HumanPresence();
+  FuzzySetTemp();
   Serial.println("\n**********************************\n");
   delay(2000);
 }
@@ -283,21 +285,26 @@ void HumanPresence()  // Human Detection
   }
 }
 
-void AutoShutOff()  // Shut Off
+void ShutOff()  // Shut Off
+{
+  periodAbsent = millis();
+
+  if (periodAbsent - 90000 >= 0) {     // after 2 mins (120000ms) Shut OFF
+    // OFF appliances
+    IrSender.sendNEC(0xEF00, 0x2, 3);         // OFF bulb
+    IrSender.sendNEC(0x0, 0x1C, 1);           // OFF fan
+    // OFF AC
+    IrSender.sendPulseDistanceWidthFromArray
+    (38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
+    
+    periodAbsent = 0;
+  }
+}
+
+void AutoShutOff()  // Auto Shut Off
 {
   if (presence == 0 && (stateAC || stateFan || stateBulb)) {
-    periodAbsent = millis();
-
-    if (periodAbsent - 60000 >= 0) {     // after 2 mins (120000ms) Shut OFF
-      // OFF appliances
-      IrSender.sendNEC(0xEF00, 0x2, 3);         // OFF bulb
-      IrSender.sendNEC(0x0, 0x1C, 0);           // OFF fan
-      // OFF AC
-      IrSender.sendPulseDistanceWidthFromArray
-      (38, 8950, 4500, 600, 1600, 600, 500, &OFFRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
-      
-      periodAbsent = 0;
-    }
+    ShutOff();
   }
 }
 
@@ -308,12 +315,22 @@ void Reset24Hr()
 
   // (nowhr == 0) reset bool rstAC to false after 24hr
   if ((nowmin%5) == 4) {  // every 4 mins rst (4th min in 5 mins interval)
-    AutoShutOff();
+    ShutOff();
     rstAC = false;
     rstFan = false;
   }
 }
 
+void Scheduler()
+{
+  if (schedule == 1) {
+    ScheduledAction_AC();
+    ScheduledAction_Fan();
+  }
+  else {
+    AutoShutOff();
+  }
+}
 void ScheduledAction_AC()
 {
   //nowhr = rtc.getHours();   //get instant hour time
@@ -331,6 +348,7 @@ void ScheduledAction_AC()
     (38, 8950, 4500, 600, 1650, 600, 550, &ONRawData[0], 48, PROTOCOL_IS_LSB_FIRST, 0, 0);
     
     FuzzySetTemp();                           // set AC temp
+    IrSender.sendNEC(0xEF00, 0x4, 1);
 
     stateAC = true;             //AC state on
     rstAC = true;               //rst state: done run once
@@ -344,6 +362,7 @@ void ScheduledAction_Fan()
   if ((nowmin%5) == 2 && rstFan == false)  // runs every 2nd min in 5 mins interval
   {
     IrSender.sendNEC(0x0, 0x1C, 1);  // Fan ON
+    IrSender.sendNEC(0xEF00, 0x8, 1);// Bulb ON Warm
 
     stateFan = true;
   }
@@ -417,7 +436,8 @@ void FuzzySetTemp()
   fuzzy -> fuzzify();
 
   tempSet = fuzzy -> defuzzify(1);
-  Serial.println("Fuzzy Temp: " + String(tempSet) + "\n\n");
+  Serial.println("\nFuzzy Temp: " + String(tempSet) + "\n\n");
+  Blynk.virtualWrite(V12, String(tempSet));
 
   if (stateAC) {    // if stateAC is true/ON then tempSet is sent
     switch (tempSet) {
@@ -539,6 +559,8 @@ BLYNK_WRITE(V20)    // Light
     IrSender.sendNEC(0xEF00, 0x3, 1); //do bulb on
     IrSender.sendNEC(0xEF00, 0x7, 1); //do bulb white
     stateBulb = true;                 //AC state on
+
+    AutoShutOff();
   }
 }
 
@@ -604,5 +626,17 @@ BLYNK_WRITE(V32)    // Fan Timer
   if (btnV32 == 1 && stateFan == true) {   // if Fan is ON do...
     IrSender.sendNEC(0x0, 0x40, 1); // cycle timer
     // 10,20, 30 mins -> 1, 2, 3, 4, 5, 6, 7, 8, 9 hr
+  }
+}
+
+BLYNK_WRITE(V50)  // Scheduler
+{
+  btnV50 = param.asInt();
+
+  if (btnV50 == 1) {
+    schedule = true;
+  }
+  else { 
+    schedule = false;
   }
 }

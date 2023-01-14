@@ -11,13 +11,13 @@
 #include <BlynkSimpleEsp32.h> // Blynk ESP32
 
 // define identifiers
-const char* ssid = "ace93";//"UniKL MIIT";"Nazrin's Family";
-const char* pass = "anything";//"cheesecake6";
+const char* ssid = "UniKL MIIT";//;"Nazrin's Family";"ace93";"Nazrin's Family";
+const char* pass = "";//"anything";"cheesecake6";
 
 BlynkTimer timer;
 
 ZMPT101B voltageSensor(34);
-#define ICalibration 111.1
+#define ICalibration 2//111.1
 
 float V;
 float AC_W;
